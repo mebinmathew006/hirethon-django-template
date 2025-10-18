@@ -70,3 +70,42 @@ export const getUserDetailsRoute = async () => {
     const response = await axios.get('/api/user/')
     return response.data
 }
+
+// Schedule-related API calls
+export const getUserScheduleRoute = async () => {
+    const response = await axiosInstance.get('/api/members/schedule/');
+    return response;
+}
+
+export const getDaySlotsRoute = async (year, month, day) => {
+    const response = await axiosInstance.get(`/api/members/day-slots/${year}/${month}/${day}/`);
+    return response;
+}
+
+export const requestLeaveRoute = async (date, reason = 'Leave requested') => {
+    const response = await axiosInstance.post('/api/members/request-leave/', {
+        date: date,
+        reason: reason
+    });
+    return response;
+}
+
+export const requestSwapRoute = async (slotId, toMemberId) => {
+    const response = await axiosInstance.post('/api/members/request-swap/', {
+        slot_id: slotId,
+        to_member_id: toMemberId
+    });
+    return response;
+}
+
+export const getSwapRequestsRoute = async () => {
+    const response = await axiosInstance.get('/api/members/swap-requests/');
+    return response;
+}
+
+export const respondToSwapRequestRoute = async (swapRequestId, action) => {
+    const response = await axiosInstance.post(`/api/members/swap-requests/${swapRequestId}/respond/`, {
+        action: action
+    });
+    return response;
+}

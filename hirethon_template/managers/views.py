@@ -711,6 +711,28 @@ def create_team_member_for_team_view(request, team_id):
     data = request.data.copy()
     data['team'] = team_id
     
+    # Check if user is already a member of this team
+    user_id = request.data.get('user')
+    if user_id:
+        try:
+            existing_membership = TeamMember.objects.get(user_id=user_id, team=team)
+            if existing_membership.is_active:
+                return Response(
+                    {'error': {'commonError': 'This user is already an active member of this team.'}},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                # Reactivate the existing membership
+                existing_membership.is_active = True
+                existing_membership.save()
+                response_serializer = TeamMemberResponseSerializer(existing_membership)
+                return Response({
+                    'message': 'User reactivated in team successfully.',
+                    'team_member': response_serializer.data
+                }, status=status.HTTP_200_OK)
+        except TeamMember.DoesNotExist:
+            pass  # User is not a member of this team, continue with creation
+    
     # Use serializer for validation and creation
     serializer = CreateTeamMemberSerializer(data=data)
     
@@ -728,6 +750,17 @@ def create_team_member_for_team_view(request, team_id):
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error creating team member: {str(e)}")
+            
+            # Check if it's a unique constraint violation
+            if 'unique constraint' in str(e).lower() or 'unique set' in str(e).lower():
+                return Response(
+                    {'error': {'commonError': 'This user is already a member of this team.'}},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             return Response(
                 {'error': {'commonError': 'An unexpected error occurred while adding the team member.'}},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

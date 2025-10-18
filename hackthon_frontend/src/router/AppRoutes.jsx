@@ -8,6 +8,8 @@ import AdminAddTeamMember from "../pages/admin/AdminAddTeamMember";
 import AdminViewTeam from "../pages/admin/AdminViewTeam";
 import AdminManageUser from "../pages/admin/AdminManageUser";
 import UserHomePage from "../pages/user/UserHomePage";
+import UserViewSchedule from "../pages/user/UserViewSchedule";
+import SwapRequests from "../pages/user/SwapRequests";
 import NotFound from "../components/NotFound";
 
 
@@ -22,7 +24,9 @@ const AppRoutes = () => {
       <Route path="/view-teams" element={<AdminViewTeam/>} />
       <Route path="/add-team-member" element={<AdminAddTeamMember/>} />
       <Route path="/add-team-member/:teamId" element={<AdminAddTeamMember/>} />
-      <Route path="/user_home_page" element={<UserHomePage/>} />
+      <Route path="/user/home" element={<UserHomePage/>} />
+      <Route path="/user/schedule" element={<UserViewSchedule/>} />
+      <Route path="/user/swap-requests" element={<SwapRequests/>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

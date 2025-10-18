@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Users, Calendar, Clock, User, Mail, Shield, ArrowLeft, Settings, LogOut, Menu, X, Zap, TrendingUp, MapPin, Clock4 } from "lucide-react";
+import { Users, Calendar, Clock, User, Mail, Zap, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { destroyDetails } from "../../store/UserDetailsSlice";
-import { getUserDashboardRoute, logoutRoute } from "../../services/userService";
+import { getUserDashboardRoute } from "../../services/userService";
 import { toast } from "react-toastify";
+import UserSidebar from "../../components/UserSidebar";
 
 export default function UserHomePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   // Fetch user dashboard data
   const fetchUserData = async () => {
@@ -35,25 +33,6 @@ export default function UserHomePage() {
   useEffect(() => {
     fetchUserData();
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await logoutRoute();
-      dispatch(destroyDetails());
-      toast.success("Logged out successfully", {
-        position: "bottom-center",
-      });
-      navigate("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Even if the logout request fails, we should clear local state
-      dispatch(destroyDetails());
-      toast.error("Error during logout, but you have been logged out locally", {
-        position: "bottom-center",
-      });
-      navigate("/");
-    }
-  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -79,13 +58,13 @@ export default function UserHomePage() {
   const getRoleIcon = (role) => {
     switch (role) {
       case 'admin':
-        return <Shield className="w-5 h-5" />;
+        return 'Admin';
       case 'manager':
-        return <User className="w-5 h-5" />;
+        return 'Manager';
       case 'doctor':
-        return <Users className="w-5 h-5" />;
+        return 'Doctor';
       default:
-        return <User className="w-5 h-5" />;
+        return 'User';
     }
   };
 
@@ -109,77 +88,12 @@ export default function UserHomePage() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
       
       {/* Sidebar */}
-      <div className={`relative z-20 ${isSidebarOpen ? 'w-72' : 'w-20'} transition-all duration-300 backdrop-blur-xl bg-white/5 border-r border-white/10`}>
-        <div className="flex flex-col h-full p-4">
-          <div className="flex items-center justify-between mb-8">
-            {isSidebarOpen && (
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl shadow-lg">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold text-white">TimeSync</h1>
-              </div>
-            )}
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {isSidebarOpen ? (
-                <X className="w-6 h-6 text-white" />
-              ) : (
-                <Menu className="w-6 h-6 text-white" />
-              )}
-            </button>
-          </div>
-
-          {/* User Profile Section */}
-          {userData && (
-            <div className="mb-8 p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg bg-gradient-to-br ${getRoleColor(userData.role)}`}>
-                  {getRoleIcon(userData.role)}
-                </div>
-                {isSidebarOpen && (
-                  <div>
-                    <h3 className="text-white font-semibold">{userData.name}</h3>
-                    <p className="text-xs text-gray-400 capitalize">{userData.role}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <nav className="flex-1 space-y-2">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-500/50 transition-all">
-              <Clock4 className="w-5 h-5" />
-              {isSidebarOpen && <span className="font-medium">Dashboard</span>}
-            </button>
-
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/10 transition-all">
-              <Calendar className="w-5 h-5" />
-              {isSidebarOpen && <span className="font-medium">My Schedule</span>}
-            </button>
-
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/10 transition-all">
-              <Users className="w-5 h-5" />
-              {isSidebarOpen && <span className="font-medium">My Teams</span>}
-            </button>
-
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/10 transition-all">
-              <Settings className="w-5 h-5" />
-              {isSidebarOpen && <span className="font-medium">Settings</span>}
-            </button>
-          </nav>
-
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-300 hover:bg-red-500/10 transition-all mt-4"
-          >
-            <LogOut className="w-5 h-5" />
-            {isSidebarOpen && <span className="font-medium">Logout</span>}
-          </button>
-        </div>
-      </div>
+      <UserSidebar 
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        userData={userData}
+        activeTab="dashboard"
+      />
       
       {/* Main Content */}
       <div className="flex-1 relative z-10 overflow-y-auto">
@@ -250,7 +164,7 @@ export default function UserHomePage() {
                 <div className="relative z-10">
                   <div className="flex items-center gap-6 mb-6">
                     <div className={`p-4 rounded-2xl bg-gradient-to-br ${getRoleColor(userData.role)} shadow-lg`}>
-                      {getRoleIcon(userData.role)}
+                      <User className="w-8 h-8 text-white" />
                     </div>
                     <div>
                       <h2 className="text-3xl font-bold text-white">{userData.name}</h2>

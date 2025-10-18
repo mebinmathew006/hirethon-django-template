@@ -60,14 +60,22 @@ class UserDashboardSerializer(serializers.ModelSerializer):
         return UserDashboardTeamSerializer(teams, many=True).data
     
     def get_total_availability_hours(self, obj):
-        """Get total available days for the user (since availability is now date-based)"""
-        from datetime import date
+        """Calculate available hours for the user (assume available unless on leave)"""
+        from datetime import date, timedelta
         
-        # Count available days from today onwards
-        available_days = obj.availability.filter(
-            is_available=True,  # Only count when user is available
-            date__gte=date.today()
+        today = date.today()
+        # Calculate total days from today to next 30 days (or adjust as needed)
+        total_days = 30
+        
+        # Count leave days (unavailable dates) in the next 30 days
+        leave_days = obj.availability.filter(
+            date__gte=today,
+            date__lt=today + timedelta(days=total_days),
+            is_available=False  # Only count unavailable/leave dates
         ).count()
         
+        # Available days = total days - leave days
+        available_days = total_days - leave_days
+        
         # Convert to hours (assuming 24 hours per available day)
-        return available_days * 24
+        return max(0, available_days * 24)

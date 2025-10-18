@@ -1,12 +1,13 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from datetime import timedelta
 
 User = get_user_model()
 # Create your models here.
 
 class Team(models.Model):
     name = models.CharField(max_length=255)
-    slot_duration = models.DurationField(default=3600) 
+    slot_duration = models.DurationField(default=timedelta(hours=1)) 
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
@@ -32,8 +33,8 @@ class Holiday(models.Model):
 
 class Availability(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="availability")
-    date = models.DateField()  # The date when the user is available/unavailable
-    is_available = models.BooleanField(default=True)  # True = available for on-call, False = unavailable (PTO, etc.)
+    date = models.DateField()  # The date when the user has leave/unavailability record
+    is_available = models.BooleanField(default=True)  # True = available, False = unavailable (leave/PTO)
     reason = models.CharField(max_length=255, blank=True, help_text="Reason for unavailability (e.g., 'PTO', 'Sick leave')")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

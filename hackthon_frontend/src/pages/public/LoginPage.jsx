@@ -45,7 +45,7 @@ export default function LoginPage() {
       if (userDetails.is_manager) {
         navigate("/admin_home_page");
       } else {
-        navigate("/user_home_page");
+        navigate("/user/home");
       }
 
     } catch (error) {

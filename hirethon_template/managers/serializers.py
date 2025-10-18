@@ -289,49 +289,63 @@ class CreateTeamMemberSerializer(serializers.ModelSerializer):
         team = attrs.get('team')
         
         if user and team:
-            # Check if user is already in this specific team
-            if TeamMember.objects.filter(user=user, team=team).exists():
+            # Check if user is already an active member of this specific team
+            active_membership = TeamMember.objects.filter(user=user, team=team, is_active=True).first()
+            if active_membership:
                 raise serializers.ValidationError({
-                    'commonError': 'This user is already a member of this team.'
+                    'commonError': 'This user is already an active member of this team.'
                 })
             
-            # Check if user is already in any other team (one user = one team rule)
-            existing_membership = TeamMember.objects.filter(user=user).exclude(team=team).first()
-            if existing_membership:
+            # Check if user is already in any other active team (one user = one team rule)
+            existing_active_membership = TeamMember.objects.filter(user=user, is_active=True).exclude(team=team).first()
+            if existing_active_membership:
                 raise serializers.ValidationError({
-                    'commonError': f'This user is already a member of team "{existing_membership.team.name}". A user can only be in one team at a time.'
+                    'commonError': f'This user is already a member of team "{existing_active_membership.team.name}". A user can only be in one team at a time.'
                 })
         
         return attrs
 
     def create(self, validated_data):
         """
-        Create and return a new team member instance and set up availability for the entire week
+        Create and return a new team member instance
+        Note: Users are assumed to be available by default, only leave dates are stored in Availability
         """
-        user = validated_data.get('user')
+        import logging
         
-        # Create the team member
-        team_member = TeamMember.objects.create(**validated_data)
+        logger = logging.getLogger(__name__)
         
-        # Set up availability for the entire week (starting from today)
-        today = timezone.now().date()
-        start_of_week = today - timedelta(days=today.weekday())  # Monday
-        
-        # Create availability records for each day of the week (7 days)
-        for day_offset in range(7):
-            current_day = start_of_week.date() + timedelta(days=day_offset)
+        try:
+            # Check if there's an inactive membership first
+            user = validated_data.get('user')
+            team = validated_data.get('team')
+            inactive_membership = TeamMember.objects.filter(user=user, team=team, is_active=False).first()
             
-            # Create availability record for the date (user is available)
-            Availability.objects.get_or_create(
-                user=user,
-                date=current_day,
-                defaults={
-                    'is_available': True,  # User is available for on-call on this date
-                    'reason': ''  # No reason needed for availability
-                }
-            )
-        
-        return team_member
+            if inactive_membership:
+                # Reactivate the existing membership
+                inactive_membership.is_active = True
+                inactive_membership.is_manager = validated_data.get('is_manager', False)
+                inactive_membership.save()
+                team_member = inactive_membership
+                logger.info(f"Reactivated team member {team_member.id} for user {user.id} in team {team.id}")
+            else:
+                # Create the team member
+                team_member = TeamMember.objects.create(**validated_data)
+                logger.info(f"Successfully created team member {team_member.id} for user {user.id} in team {team.id}")
+            
+            return team_member
+            
+        except Exception as e:
+            logger.error(f"Failed to create team member: {str(e)}")
+            
+            # Import Django's IntegrityError
+            from django.db import IntegrityError
+            
+            if isinstance(e, IntegrityError) and 'unique constraint' in str(e).lower():
+                raise serializers.ValidationError({
+                    'commonError': 'This user is already a member of this team.'
+                })
+            
+            raise
 
 
 class TeamMemberResponseSerializer(serializers.ModelSerializer):
