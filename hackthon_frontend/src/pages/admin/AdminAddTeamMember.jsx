@@ -418,7 +418,7 @@ export default function AdminAddTeamMember() {
                 <div className="flex gap-4 pt-6">
                   <button
                     type="submit"
-                    disabled={isSubmitting || team.length === 0 || users.length === 0}
+                    disabled={isSubmitting || (!teamId && !team) || users.length === 0}
                     className="flex-1 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-2xl shadow-emerald-500/50 hover:shadow-emerald-400/60 focus:outline-none focus:ring-4 focus:ring-emerald-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="relative z-10">

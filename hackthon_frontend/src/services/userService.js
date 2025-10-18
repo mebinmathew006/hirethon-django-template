@@ -32,8 +32,8 @@ export const createTeamMemberRoute = async (teamMemberData) => {
     return response;
 }
 
-export const getTeamsManagementRoute = async () => {
-    const response = await axiosInstance.get('/api/managers/teams-management/');
+export const getTeamsManagementRoute = async (page = 1, pageSize = 10) => {
+    const response = await axiosInstance.get(`/api/managers/teams-management/?page=${page}&page_size=${pageSize}`);
     return response;
 }
 
@@ -44,6 +44,16 @@ export const toggleTeamStatusRoute = async (teamId) => {
 
 export const createTeamMemberForTeamRoute = async (teamId, teamMemberData) => {
     const response = await axiosInstance.post(`/api/managers/add-member-to-team/${teamId}/`, teamMemberData);
+    return response;
+}
+
+export const getUsersManagementRoute = async (page = 1, pageSize = 10) => {
+    const response = await axiosInstance.get(`/api/managers/users-management/?page=${page}&page_size=${pageSize}`);
+    return response;
+}
+
+export const toggleUserStatusRoute = async (userId) => {
+    const response = await axiosInstance.patch(`/api/managers/toggle-user-status/${userId}/`);
     return response;
 }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, UserPlus, Calendar, Settings, LogOut, Menu, X, BarChart3, UserCheck } from "lucide-react";
+import { Users, UserPlus, Calendar, Settings, LogOut, Menu, X, BarChart3, UserCheck, UserCog } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
@@ -44,6 +44,14 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           >
             <UserPlus className="w-5 h-5" />
             {isSidebarOpen && <span className="font-medium">Add User</span>}
+          </button>
+
+          <button 
+            onClick={() => navigate("/manage-users")}  
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/10 transition-all"
+          >
+            <UserCog className="w-5 h-5" />
+            {isSidebarOpen && <span className="font-medium">Manage Users</span>}
           </button>
 
           <button 

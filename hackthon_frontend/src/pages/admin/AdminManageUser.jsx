@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Users, UserPlus, ArrowLeft, Shield, Eye, EyeOff, Clock, Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Users, UserCheck, ArrowLeft, Shield, Eye, EyeOff, Mail, Calendar, User as UserIcon, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getTeamsManagementRoute, toggleTeamStatusRoute } from "../../services/userService";
+import { getUsersManagementRoute, toggleUserStatusRoute } from "../../services/userService";
 import { toast } from "react-toastify";
 import Sidebar from "../../components/Sidebar";
 
-export default function AdminViewTeam() {
+export default function AdminManageUser() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [teams, setTeams] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -19,14 +19,14 @@ export default function AdminViewTeam() {
   });
   const navigate = useNavigate();
 
-  // Fetch teams data
-  const fetchTeams = async (page = 1, pageSize = 10) => {
+  // Fetch users data
+  const fetchUsers = async (page = 1, pageSize = 10) => {
     try {
       setLoading(true);
-      const response = await getTeamsManagementRoute(page, pageSize);
+      const response = await getUsersManagementRoute(page, pageSize);
       
       if (response.status === 200) {
-        setTeams(response.data.teams || []);
+        setUsers(response.data.users || []);
         setPagination(response.data.pagination || {
           currentPage: 1,
           totalPages: 1,
@@ -37,8 +37,8 @@ export default function AdminViewTeam() {
         });
       }
     } catch (error) {
-      console.error("Error fetching teams:", error);
-      toast.error("Failed to load teams data", {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users data", {
         position: "bottom-center",
       });
     } finally {
@@ -46,40 +46,42 @@ export default function AdminViewTeam() {
     }
   };
 
-  // Fetch teams data on component mount and when pagination changes
+  // Fetch users data on component mount and when pagination changes
   useEffect(() => {
-    fetchTeams(pagination.currentPage, pagination.pageSize);
+    fetchUsers(pagination.currentPage, pagination.pageSize);
   }, []);
 
   // Handle page change
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages && newPage !== pagination.currentPage) {
-      fetchTeams(newPage, pagination.pageSize);
+      fetchUsers(newPage, pagination.pageSize);
     }
   };
 
-  const handleToggleTeamStatus = async (teamId, currentStatus) => {
+  const handleToggleUserStatus = async (userId, currentStatus) => {
     try {
-      const response = await toggleTeamStatusRoute(teamId);
+      const response = await toggleUserStatusRoute(userId);
       
       if (response.status === 200) {
         // Refresh the current page to get updated data
-        fetchTeams(pagination.currentPage, pagination.pageSize);
+        fetchUsers(pagination.currentPage, pagination.pageSize);
         
         toast.success(response.data.message, {
           position: "bottom-center",
         });
       }
     } catch (error) {
-      console.error("Error toggling team status:", error);
-      toast.error("Failed to toggle team status", {
-        position: "bottom-center",
-      });
+      console.error("Error toggling user status:", error);
+      if (error.response?.data?.error?.commonError) {
+        toast.error(error.response.data.error.commonError, {
+          position: "bottom-center",
+        });
+      } else {
+        toast.error("Failed to toggle user status", {
+          position: "bottom-center",
+        });
+      }
     }
-  };
-
-  const handleAddMember = (teamId) => {
-    navigate(`/add-team-member/${teamId}`);
   };
 
   const formatDate = (dateString) => {
@@ -88,6 +90,32 @@ export default function AdminViewTeam() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'admin':
+        return 'from-red-500 to-pink-500';
+      case 'manager':
+        return 'from-purple-500 to-indigo-500';
+      case 'doctor':
+        return 'from-blue-500 to-cyan-500';
+      default:
+        return 'from-gray-500 to-gray-600';
+    }
+  };
+
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'admin':
+        return <Shield className="w-4 h-4" />;
+      case 'manager':
+        return <UserCheck className="w-4 h-4" />;
+      case 'doctor':
+        return <Users className="w-4 h-4" />;
+      default:
+        return <UserIcon className="w-4 h-4" />;
+    }
   };
 
   // Custom Pagination Component
@@ -134,7 +162,7 @@ export default function AdminViewTeam() {
         <div className="text-sm text-gray-300 flex justify-between items-center">
           <span>
             Showing <strong className="text-white">{startItem}</strong> to <strong className="text-white">{endItem}</strong> of{" "}
-            <strong className="text-white">{totalCount}</strong> teams
+            <strong className="text-white">{totalCount}</strong> users
           </span>
         </div>
 
@@ -210,7 +238,7 @@ export default function AdminViewTeam() {
       <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-white text-lg">Loading teams...</span>
+          <span className="text-white text-lg">Loading users...</span>
         </div>
       </div>
     );
@@ -237,78 +265,92 @@ export default function AdminViewTeam() {
 
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg shadow-purple-500/50">
+                <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl shadow-lg shadow-blue-500/50">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold text-white">Team Management</h1>
-                  <p className="text-gray-300 mt-1">Manage teams, members, and team status</p>
+                  <h1 className="text-4xl font-bold text-white">User Management</h1>
+                  <p className="text-gray-300 mt-1">Manage users, roles, and account status</p>
                 </div>
               </div>
 
-              {teams.length === 0 ? (
+              {users.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="p-4 bg-white/10 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <Users className="w-10 h-10 text-gray-400" />
                   </div>
-                  <h3 className="text-xl text-gray-300 mb-2">No Teams Found</h3>
-                  <p className="text-gray-400">Create your first team to get started.</p>
+                  <h3 className="text-xl text-gray-300 mb-2">No Users Found</h3>
+                  <p className="text-gray-400">No users are registered in the system.</p>
                 </div>
               ) : (
                 <>
-                  {/* Teams Table */}
+                  {/* Users Table */}
                   <div className="backdrop-blur-xl bg-white/5 rounded-xl border border-white/10 overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead className="bg-white/5 border-b border-white/10">
                           <tr>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-white">Team</th>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-white">Created</th>
-                            <th className="px-6 py-4 text-center text-sm font-semibold text-white">Total Members</th>
-                            <th className="px-6 py-4 text-center text-sm font-semibold text-white">Active Members</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-white">User</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-white">Role</th>
+                            <th className="px-6 py-4 text-center text-sm font-semibold text-white">Teams</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-white">Joined</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-white">Last Login</th>
                             <th className="px-6 py-4 text-center text-sm font-semibold text-white">Status</th>
                             <th className="px-6 py-4 text-center text-sm font-semibold text-white">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {teams.map((team) => (
+                          {users.map((user) => (
                             <tr
-                              key={team.id}
+                              key={user.id}
                               className={`border-b border-white/5 transition-all duration-200 hover:bg-white/5 ${
-                                team.is_active ? '' : 'opacity-75'
+                                user.is_active ? '' : 'opacity-75'
                               }`}
                             >
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <div className={`p-2 rounded-lg ${
-                                    team.is_active ? 'bg-gradient-to-br from-green-500 to-emerald-500' : 'bg-gradient-to-br from-red-500 to-pink-500'
+                                  <div className={`p-2 rounded-lg bg-gradient-to-br ${
+                                    user.is_active ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500'
                                   }`}>
-                                    <Users className="w-5 h-5 text-white" />
+                                    <UserIcon className="w-5 h-5 text-white" />
                                   </div>
                                   <div>
-                                    <h3 className="text-lg font-semibold text-white">{team.name}</h3>
-                                    <p className="text-sm text-gray-400">ID: {team.id}</p>
+                                    <h3 className="text-lg font-semibold text-white">{user.name}</h3>
+                                    <p className="text-sm text-gray-400 flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      {user.email}
+                                    </p>
                                   </div>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
-                                <p className="text-sm text-gray-300">{formatDate(team.created_at)}</p>
+                                <div className="flex items-center gap-2">
+                                  <div className={`p-1.5 rounded-lg bg-gradient-to-br ${getRoleColor(user.role)}`}>
+                                    {getRoleIcon(user.role)}
+                                  </div>
+                                  <span className="text-white font-medium capitalize">{user.role}</span>
+                                </div>
                               </td>
                               <td className="px-6 py-4 text-center">
                                 <div className="flex items-center justify-center gap-2">
                                   <Users className="w-4 h-4 text-blue-400" />
-                                  <span className="text-white font-semibold">{team.member_count}</span>
+                                  <span className="text-white font-semibold">{user.team_count}</span>
                                 </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-sm text-gray-300 flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {formatDate(user.date_joined)}
+                                </p>
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-sm text-gray-300">
+                                  {user.last_login_display || 'Never'}
+                                </p>
                               </td>
                               <td className="px-6 py-4 text-center">
                                 <div className="flex items-center justify-center gap-2">
-                                  <Shield className="w-4 h-4 text-green-400" />
-                                  <span className="text-white font-semibold">{team.active_member_count}</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                  {team.is_active ? (
+                                  {user.is_active ? (
                                     <>
                                       <Eye className="w-4 h-4 text-green-400" />
                                       <span className="text-green-300 font-semibold">Active</span>
@@ -316,7 +358,7 @@ export default function AdminViewTeam() {
                                   ) : (
                                     <>
                                       <EyeOff className="w-4 h-4 text-red-400" />
-                                      <span className="text-red-300 font-semibold">Inactive</span>
+                                      <span className="text-red-300 font-semibold">Blocked</span>
                                     </>
                                   )}
                                 </div>
@@ -324,22 +366,16 @@ export default function AdminViewTeam() {
                               <td className="px-6 py-4">
                                 <div className="flex items-center justify-center gap-2">
                                   <button
-                                    onClick={() => handleAddMember(team.id)}
-                                    className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white py-2 px-4 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200"
-                                  >
-                                    <UserPlus className="w-4 h-4" />
-                                    Add Member
-                                  </button>
-                                  <button
-                                    onClick={() => handleToggleTeamStatus(team.id, team.is_active)}
-                                    className={`flex items-center gap-1 py-2 px-4 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
-                                      team.is_active
+                                    onClick={() => handleToggleUserStatus(user.id, user.is_active)}
+                                    disabled={user.is_superuser && !user.is_active}
+                                    className={`flex items-center gap-1 py-2 px-4 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                      user.is_active
                                         ? 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-500 hover:to-pink-400 focus:ring-red-500/50 text-white'
                                         : 'bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 focus:ring-green-500/50 text-white'
                                     }`}
                                   >
-                                    {team.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    {team.is_active ? 'Block' : 'Unblock'}
+                                    {user.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    {user.is_active ? 'Block User' : 'Unblock User'}
                                   </button>
                                 </div>
                               </td>

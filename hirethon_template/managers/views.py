@@ -3,17 +3,31 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from django.core.paginator import Paginator
 
 from .models import Team, TeamMember
 from .serializers import (
     CreateUserSerializer, UserResponseSerializer, 
     CreateTeamSerializer, TeamResponseSerializer,
     CreateTeamMemberSerializer, TeamMemberResponseSerializer,
-    TeamListSerializer, TeamManagementSerializer, UserListSerializer
+    TeamListSerializer, TeamManagementSerializer, UserListSerializer, UserManagementSerializer
 )
 from .tasks import send_user_credentials_email_task
 
 User = get_user_model()
+
+# Helper function to check if user is active
+def check_user_activity(user):
+    """
+    Check if user is active, return error response if not
+    """
+    if not user.is_active:
+        from rest_framework.response import Response
+        return Response(
+            {'error': {'commonError': 'Your account has been deactivated. Please contact an administrator.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    return None
 
 # Create your views here.
 
@@ -23,6 +37,11 @@ def create_user_view(request):
     """
     API view to create a new user (only accessible by authenticated managers/admins)
     """
+    # Check if user is active
+    activity_check = check_user_activity(request.user)
+    if activity_check:
+        return activity_check
+    
     # Check if the requesting user has permission to create users
     if not (request.user.is_superuser or request.user.is_manager):
         return Response(
@@ -94,12 +113,113 @@ def create_user_view(request):
         )
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_users_management_view(request):
+    """
+    API view to get all users with management info (with pagination)
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to view users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get pagination parameters from query string
+    page = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', 10)
+    
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 10
+    
+    # Ensure page_size is within reasonable limits
+    page_size = min(max(page_size, 1), 50)  # Between 1 and 50
+    
+    users_queryset = User.objects.all().order_by('-date_joined')
+    paginator = Paginator(users_queryset, page_size)
+    
+    try:
+        users_page = paginator.page(page)
+    except:
+        # If page is out of range, return the last page
+        users_page = paginator.page(paginator.num_pages)
+    
+    serializer = UserManagementSerializer(users_page.object_list, many=True)
+    
+    return Response({
+        'users': serializer.data,
+        'pagination': {
+            'current_page': users_page.number,
+            'total_pages': paginator.num_pages,
+            'total_count': paginator.count,
+            'page_size': page_size,
+            'has_next': users_page.has_next(),
+            'has_previous': users_page.has_previous(),
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_user_status_view(request, user_id):
+    """
+    API view to toggle user active status
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to modify users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Prevent users from deactivating themselves
+    if request.user.id == user_id:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate your own account.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+         user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': {'commonError': 'User not found.'}},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Prevent deactivating superusers
+    if user.is_superuser and not request.user.is_superuser:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate superuser accounts.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Toggle the is_active status
+    user.is_active = not user.is_active
+    user.save()
+    
+    serializer = UserManagementSerializer(user)
+    
+    return Response({
+        'message': f'User {"activated" if user.is_active else "deactivated"} successfully.',
+        'user': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_team_view(request):
     """
     API view to create a new team (only accessible by authenticated managers/admins)
     """
+    # Check if user is active
+    activity_check = check_user_activity(request.user)
+    if activity_check:
+        return activity_check
+    
     # Check if the requesting user has permission to create teams
     if not (request.user.is_superuser or request.user.is_manager):
         return Response(
@@ -155,6 +275,102 @@ def create_team_view(request):
             {'error': errors},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_users_management_view(request):
+    """
+    API view to get all users with management info (with pagination)
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to view users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get pagination parameters from query string
+    page = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', 10)
+    
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 10
+    
+    # Ensure page_size is within reasonable limits
+    page_size = min(max(page_size, 1), 50)  # Between 1 and 50
+    
+    users_queryset = User.objects.all().order_by('-date_joined')
+    paginator = Paginator(users_queryset, page_size)
+    
+    try:
+        users_page = paginator.page(page)
+    except:
+        # If page is out of range, return the last page
+        users_page = paginator.page(paginator.num_pages)
+    
+    serializer = UserManagementSerializer(users_page.object_list, many=True)
+    
+    return Response({
+        'users': serializer.data,
+        'pagination': {
+            'current_page': users_page.number,
+            'total_pages': paginator.num_pages,
+            'total_count': paginator.count,
+            'page_size': page_size,
+            'has_next': users_page.has_next(),
+            'has_previous': users_page.has_previous(),
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_user_status_view(request, user_id):
+    """
+    API view to toggle user active status
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to modify users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Prevent users from deactivating themselves
+    if request.user.id == user_id:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate your own account.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+         user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': {'commonError': 'User not found.'}},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Prevent deactivating superusers
+    if user.is_superuser and not request.user.is_superuser:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate superuser accounts.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Toggle the is_active status
+    user.is_active = not user.is_active
+    user.save()
+    
+    serializer = UserManagementSerializer(user)
+    
+    return Response({
+        'message': f'User {"activated" if user.is_active else "deactivated"} successfully.',
+        'user': serializer.data
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -274,9 +490,105 @@ def create_team_member_view(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def get_users_management_view(request):
+    """
+    API view to get all users with management info (with pagination)
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to view users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get pagination parameters from query string
+    page = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', 10)
+    
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 10
+    
+    # Ensure page_size is within reasonable limits
+    page_size = min(max(page_size, 1), 50)  # Between 1 and 50
+    
+    users_queryset = User.objects.all().order_by('-date_joined')
+    paginator = Paginator(users_queryset, page_size)
+    
+    try:
+        users_page = paginator.page(page)
+    except:
+        # If page is out of range, return the last page
+        users_page = paginator.page(paginator.num_pages)
+    
+    serializer = UserManagementSerializer(users_page.object_list, many=True)
+    
+    return Response({
+        'users': serializer.data,
+        'pagination': {
+            'current_page': users_page.number,
+            'total_pages': paginator.num_pages,
+            'total_count': paginator.count,
+            'page_size': page_size,
+            'has_next': users_page.has_next(),
+            'has_previous': users_page.has_previous(),
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_user_status_view(request, user_id):
+    """
+    API view to toggle user active status
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to modify users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Prevent users from deactivating themselves
+    if request.user.id == user_id:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate your own account.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+         user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': {'commonError': 'User not found.'}},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Prevent deactivating superusers
+    if user.is_superuser and not request.user.is_superuser:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate superuser accounts.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Toggle the is_active status
+    user.is_active = not user.is_active
+    user.save()
+    
+    serializer = UserManagementSerializer(user)
+    
+    return Response({
+        'message': f'User {"activated" if user.is_active else "deactivated"} successfully.',
+        'user': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_teams_management_view(request):
     """
-    API view to get all teams with management info (member counts, status)
+    API view to get all teams with management info (member counts, status) with pagination
     """
     if not (request.user.is_superuser or request.user.is_manager):
         return Response(
@@ -284,11 +596,41 @@ def get_teams_management_view(request):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    teams = Team.objects.all().order_by('-created_at')
-    serializer = TeamManagementSerializer(teams, many=True)
+    # Get pagination parameters from query string
+    page = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', 10)
+    
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 10
+    
+    # Ensure page_size is within reasonable limits
+    page_size = min(max(page_size, 1), 50)  # Between 1 and 50
+    
+    teams_queryset = Team.objects.all().order_by('-created_at')
+    paginator = Paginator(teams_queryset, page_size)
+    
+    try:
+        teams_page = paginator.page(page)
+    except:
+        # If page is out of range, return the last page
+        teams_page = paginator.page(paginator.num_pages)
+    
+    serializer = TeamManagementSerializer(teams_page.object_list, many=True)
     
     return Response({
-        'teams': serializer.data
+        'teams': serializer.data,
+        'pagination': {
+            'current_page': teams_page.number,
+            'total_pages': paginator.num_pages,
+            'total_count': paginator.count,
+            'page_size': page_size,
+            'has_next': teams_page.has_next(),
+            'has_previous': teams_page.has_previous(),
+        }
     }, status=status.HTTP_200_OK)
 
 
@@ -402,3 +744,99 @@ def create_team_member_for_team_view(request, team_id):
             {'error': errors},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_users_management_view(request):
+    """
+    API view to get all users with management info (with pagination)
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to view users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get pagination parameters from query string
+    page = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', 10)
+    
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 10
+    
+    # Ensure page_size is within reasonable limits
+    page_size = min(max(page_size, 1), 50)  # Between 1 and 50
+    
+    users_queryset = User.objects.all().order_by('-date_joined')
+    paginator = Paginator(users_queryset, page_size)
+    
+    try:
+        users_page = paginator.page(page)
+    except:
+        # If page is out of range, return the last page
+        users_page = paginator.page(paginator.num_pages)
+    
+    serializer = UserManagementSerializer(users_page.object_list, many=True)
+    
+    return Response({
+        'users': serializer.data,
+        'pagination': {
+            'current_page': users_page.number,
+            'total_pages': paginator.num_pages,
+            'total_count': paginator.count,
+            'page_size': page_size,
+            'has_next': users_page.has_next(),
+            'has_previous': users_page.has_previous(),
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_user_status_view(request, user_id):
+    """
+    API view to toggle user active status
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to modify users.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Prevent users from deactivating themselves
+    if request.user.id == user_id:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate your own account.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+         user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': {'commonError': 'User not found.'}},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Prevent deactivating superusers
+    if user.is_superuser and not request.user.is_superuser:
+        return Response(
+            {'error': {'commonError': 'You cannot deactivate superuser accounts.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Toggle the is_active status
+    user.is_active = not user.is_active
+    user.save()
+    
+    serializer = UserManagementSerializer(user)
+    
+    return Response({
+        'message': f'User {"activated" if user.is_active else "deactivated"} successfully.',
+        'user': serializer.data
+    }, status=status.HTTP_200_OK)

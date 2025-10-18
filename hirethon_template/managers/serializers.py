@@ -415,3 +415,43 @@ class UserListSerializer(serializers.ModelSerializer):
             'email',
         ]
         read_only_fields = fields
+
+
+class UserManagementSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user management view with additional info
+    """
+    role = serializers.ReadOnlyField()
+    team_count = serializers.SerializerMethodField()
+    last_login_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'name',
+            'email',
+            'is_active',
+            'is_manager',
+            'is_staff',
+            'is_superuser',
+            'role',
+            'date_joined',
+            'last_login',
+            'last_login_display',
+            'team_count',
+            'skills',
+            'max_hours_per_day',
+            'max_hours_per_week',
+        ]
+        read_only_fields = ['id', 'date_joined', 'last_login', 'role', 'team_count', 'last_login_display']
+    
+    def get_team_count(self, obj):
+        """Get number of teams this user belongs to"""
+        return obj.team_memberships.count()
+    
+    def get_last_login_display(self, obj):
+        """Get formatted last login date"""
+        if obj.last_login:
+            return obj.last_login.strftime('%Y-%m-%d %H:%M')
+        return 'Never'
