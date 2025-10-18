@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class ManagersConfig(AppConfig):
+class AuthAppConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'hirethon_template.managers'
+    name = 'hirethon_template.auth_app'

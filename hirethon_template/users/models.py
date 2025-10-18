@@ -12,6 +12,10 @@ class User(AbstractUser):
     If adding fields that need to be filled at user signup,
     check forms.SignupForm and forms.SocialSignupForms accordingly.
     """
+    
+    class Meta:
+        # Temporarily disabled to avoid conflicts with auth_app.User
+        managed = False
 
     # First and last name do not cover name patterns around the globe
     name = CharField(_("Name of User"), blank=True, max_length=255)

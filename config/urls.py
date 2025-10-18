@@ -23,12 +23,16 @@ urlpatterns = [
     path("users/", include("hirethon_template.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
+    path("managers/", include("hirethon_template.managers.urls", namespace="managers")),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # API URLS
 urlpatterns += [
     # API base url
     path("api/", include("config.api_router")),
+    # API auth endpoints
+    path("api/auth/", include("hirethon_template.auth_app.urls", namespace="api_auth")),
     # DRF auth token
     path("auth-token/", obtain_auth_token),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),

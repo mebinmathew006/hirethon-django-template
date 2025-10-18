@@ -68,5 +68,18 @@ ADMIN_SITE_HEADER = "{} Admin (Development)".format("hirethon_template".title())
 ADMIN_SITE_TITLE = "{} Admin Portal (Development)".format("hirethon_template".title())
 ADMIN_INDEX_TITLE = "Welcome to {} Admin Portal (Development)".format("hirethon_template".title())
 
+# CORS settings for local development
+# ------------------------------------------------------------------------------
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:5173",  # React dev server
+    "http://localhost:5173",  # React dev server alternative
+    "http://127.0.0.1:3000",  # Alternative React dev server
+    "http://localhost:3000",  # Alternative React dev server
+]
+
+# For development, we can also allow all origins (less secure but convenient)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+
 # Your stuff...
 # ------------------------------------------------------------------------------
