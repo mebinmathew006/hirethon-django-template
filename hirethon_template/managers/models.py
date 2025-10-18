@@ -7,7 +7,10 @@ User = get_user_model()
 
 class Team(models.Model):
     name = models.CharField(max_length=255)
-    slot_duration = models.DurationField(default=timedelta(hours=1)) 
+    slot_duration = models.DurationField(default=timedelta(hours=1))
+    max_hours_per_day = models.FloatField(default=8)
+    max_hours_per_week = models.FloatField(default=40)
+    min_rest_hours = models.FloatField(default=8)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 

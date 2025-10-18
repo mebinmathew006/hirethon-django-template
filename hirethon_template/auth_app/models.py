@@ -34,9 +34,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Custom application fields
     is_manager = models.BooleanField(default=False)
     skills = models.JSONField(default=list)  # Optional: list of skill strings
-    max_hours_per_day = models.FloatField(default=8)
-    max_hours_per_week = models.FloatField(default=40)
-    min_rest_hours = models.FloatField(default=8)
     
     # Required Django user fields
     is_active = models.BooleanField(default=True)

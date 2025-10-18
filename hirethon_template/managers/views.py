@@ -275,13 +275,13 @@ def create_team_view(request):
         for field, field_errors in serializer.errors.items():
             if isinstance(field_errors, list):
                 error_message = field_errors[0] if field_errors else ''
-                if field in ['name', 'slot_duration']:
+                if field in ['name', 'slot_duration', 'max_hours_per_day', 'max_hours_per_week', 'min_rest_hours']:
                     errors[field] = error_message
                 else:
                     common_errors.append(error_message)
             else:
                 error_message = str(field_errors)
-                if field in ['name', 'slot_duration']:
+                if field in ['name', 'slot_duration', 'max_hours_per_day', 'max_hours_per_week', 'min_rest_hours']:
                     errors[field] = error_message
                 else:
                     common_errors.append(error_message)

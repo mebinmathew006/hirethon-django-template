@@ -250,19 +250,19 @@ class SlotScheduler:
             if not self._is_user_available(user, slot_date):
                 continue  # Skip unavailable users
             
-            # Check daily hours constraint (including this slot if assigned)
+            # Check daily hours constraint (including this slot if assigned) - using team constraints
             daily_hours = self._get_user_daily_hours(user, slot_date)
-            if daily_hours + slot_hours > user.max_hours_per_day:
+            if daily_hours + slot_hours > slot.team.max_hours_per_day:
                 continue  # Skip if would exceed daily limit
             
-            # Check weekly hours constraint
+            # Check weekly hours constraint - using team constraints
             week_start = slot_date - timedelta(days=slot_date.weekday())
             weekly_hours = self._get_user_weekly_hours(user, week_start)
-            if weekly_hours + slot_hours > user.max_hours_per_week:
+            if weekly_hours + slot_hours > slot.team.max_hours_per_week:
                 continue  # Skip if would exceed weekly limit
             
-            # Check rest hours constraint - CRITICAL FIX for consecutive slots
-            if not self._has_sufficient_rest(user, slot.start_time, user.min_rest_hours):
+            # Check rest hours constraint - CRITICAL FIX for consecutive slots - using team constraints
+            if not self._has_sufficient_rest(user, slot.start_time, slot.team.min_rest_hours):
                 continue  # Skip if insufficient rest
             
             # FIXED: Check for consecutive slots on the same day
@@ -414,20 +414,20 @@ class SlotScheduler:
         if not self._is_user_available(user, slot_date):
             return "User is not available on this date"
         
-        # Daily hours check
+        # Daily hours check - using team constraints
         daily_hours = self._get_user_daily_hours(user, slot_date)
-        if daily_hours + slot_hours > user.max_hours_per_day:
-            return f"Would exceed daily limit ({user.max_hours_per_day}h)"
+        if daily_hours + slot_hours > slot.team.max_hours_per_day:
+            return f"Would exceed daily limit ({slot.team.max_hours_per_day}h)"
         
-        # Weekly hours check
+        # Weekly hours check - using team constraints
         week_start = slot_date - timedelta(days=slot_date.weekday())
         weekly_hours = self._get_user_weekly_hours(user, week_start)
-        if weekly_hours + slot_hours > user.max_hours_per_week:
-            return f"Would exceed weekly limit ({user.max_hours_per_week}h)"
+        if weekly_hours + slot_hours > slot.team.max_hours_per_week:
+            return f"Would exceed weekly limit ({slot.team.max_hours_per_week}h)"
         
-        # Rest hours check
-        if not self._has_sufficient_rest(user, slot.start_time, user.min_rest_hours):
-            return f"Insufficient rest time (minimum {user.min_rest_hours}h required)"
+        # Rest hours check - using team constraints
+        if not self._has_sufficient_rest(user, slot.start_time, slot.team.min_rest_hours):
+            return f"Insufficient rest time (minimum {slot.team.min_rest_hours}h required)"
         
         return None  # No violations
     

@@ -12,6 +12,9 @@ export default function AdminAddTeam() {
     name: "",
     slot_duration_hours: "1",
     slot_duration_minutes: "0",
+    max_hours_per_day: "8",
+    max_hours_per_week: "40",
+    min_rest_hours: "8",
   });
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
@@ -65,6 +68,16 @@ export default function AdminAddTeam() {
         }
         break;
 
+      case "max_hours_per_day":
+      case "max_hours_per_week":
+      case "min_rest_hours":
+        if (!value || parseFloat(value) <= 0) {
+          newErrors[name] = "Must be a positive number";
+        } else {
+          delete newErrors[name];
+        }
+        break;
+
       default:
         break;
     }
@@ -111,6 +124,9 @@ export default function AdminAddTeam() {
         const teamData = {
           name: formData.name.trim(),
           slot_duration: totalSeconds,
+          max_hours_per_day: parseFloat(formData.max_hours_per_day),
+          max_hours_per_week: parseFloat(formData.max_hours_per_week),
+          min_rest_hours: parseFloat(formData.min_rest_hours),
         };
 
         const response = await createTeamRoute(teamData);
@@ -125,6 +141,9 @@ export default function AdminAddTeam() {
             name: "",
             slot_duration_hours: "1",
             slot_duration_minutes: "0",
+            max_hours_per_day: "8",
+            max_hours_per_week: "40",
+            min_rest_hours: "8",
           });
           setErrors({});
           setTouched({});
@@ -149,6 +168,21 @@ export default function AdminAddTeam() {
             backendErrors.slot_duration = Array.isArray(error.response.data.error.slot_duration)
               ? error.response.data.error.slot_duration[0]
               : error.response.data.error.slot_duration;
+          }
+          if (error.response.data.error.max_hours_per_day) {
+            backendErrors.max_hours_per_day = Array.isArray(error.response.data.error.max_hours_per_day)
+              ? error.response.data.error.max_hours_per_day[0]
+              : error.response.data.error.max_hours_per_day;
+          }
+          if (error.response.data.error.max_hours_per_week) {
+            backendErrors.max_hours_per_week = Array.isArray(error.response.data.error.max_hours_per_week)
+              ? error.response.data.error.max_hours_per_week[0]
+              : error.response.data.error.max_hours_per_week;
+          }
+          if (error.response.data.error.min_rest_hours) {
+            backendErrors.min_rest_hours = Array.isArray(error.response.data.error.min_rest_hours)
+              ? error.response.data.error.min_rest_hours[0]
+              : error.response.data.error.min_rest_hours;
           }
           if (error.response.data.error.commonError) {
             toast.error(error.response.data.error.commonError, {
@@ -341,6 +375,79 @@ export default function AdminAddTeam() {
                   {errors.slot_duration && (
                     <p className="mt-2 text-sm text-red-300">{errors.slot_duration}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-white mb-3">
+                    Scheduling Constraints
+                  </label>
+                  
+                  <div className="backdrop-blur-xl bg-white/5 rounded-xl p-6 border border-white/10">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label htmlFor="max_hours_per_day" className="block text-sm font-medium text-gray-300 mb-2">
+                          Max Hours/Day
+                        </label>
+                        <input
+                          id="max_hours_per_day"
+                          name="max_hours_per_day"
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          value={formData.max_hours_per_day}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          placeholder="8"
+                        />
+                        {errors.max_hours_per_day && touched.max_hours_per_day && (
+                          <p className="mt-1 text-sm text-red-300">{errors.max_hours_per_day}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="max_hours_per_week" className="block text-sm font-medium text-gray-300 mb-2">
+                          Max Hours/Week
+                        </label>
+                        <input
+                          id="max_hours_per_week"
+                          name="max_hours_per_week"
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          value={formData.max_hours_per_week}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          placeholder="40"
+                        />
+                        {errors.max_hours_per_week && touched.max_hours_per_week && (
+                          <p className="mt-1 text-sm text-red-300">{errors.max_hours_per_week}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="min_rest_hours" className="block text-sm font-medium text-gray-300 mb-2">
+                          Min Rest Hours
+                        </label>
+                        <input
+                          id="min_rest_hours"
+                          name="min_rest_hours"
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          value={formData.min_rest_hours}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          placeholder="8"
+                        />
+                        {errors.min_rest_hours && touched.min_rest_hours && (
+                          <p className="mt-1 text-sm text-red-300">{errors.min_rest_hours}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-6 border border-purple-500/30">
