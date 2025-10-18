@@ -177,12 +177,20 @@ def get_teams_list_view(request):
     }, status=status.HTTP_200_OK)
 
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_users_list_view(request):
     """
     API view to get list of users (non-managers) for dropdowns (only accessible by authenticated managers/admins)
     """
+    # Debug logging
+    print(f"User authenticated: {request.user.is_authenticated}")
+    print(f"User ID: {request.user.id if hasattr(request.user, 'id') else 'No ID'}")
+    print(f"User email: {getattr(request.user, 'email', 'No email')}")
+    print(f"User is_superuser: {getattr(request.user, 'is_superuser', 'No is_superuser')}")
+    print(f"User is_manager: {getattr(request.user, 'is_manager', 'No is_manager')}")
+    
     if not (request.user.is_superuser or request.user.is_manager):
         return Response(
             {'error': {'commonError': 'You do not have permission to view users.'}},

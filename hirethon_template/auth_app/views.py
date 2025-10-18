@@ -6,7 +6,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -78,3 +83,40 @@ def login_view(request):
     )
     
     return response
+
+
+class TokenRefreshFromCookieView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        # Extract the refresh token from cookies
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token not provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Create a RefreshToken instance and generate a new access token
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+
+            # Get user ID from refresh token payload
+            user_id = refresh.payload['user_id']
+           
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Create response with access token and user details in body
+            response = Response({
+                    'access_token': access_token,
+            }, status=status.HTTP_200_OK)
+            return response
+        except TokenError as e:
+            return Response(
+                {"detail": f"Invalid or expired refresh token.{e}"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
