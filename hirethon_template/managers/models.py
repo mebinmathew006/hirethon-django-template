@@ -108,3 +108,27 @@ class Alert(models.Model):
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     resolved = models.BooleanField(default=False)
+
+
+class LeaveRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='leave_requests')
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='leave_requests')
+    date = models.DateField()
+    reason = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    requested_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_leave_requests')
+    
+    class Meta:
+        unique_together = ('user', 'team', 'date')
+        ordering = ['-requested_at']
+    
+    def __str__(self):
+        return f"{self.user.name} - {self.date} ({self.status})"

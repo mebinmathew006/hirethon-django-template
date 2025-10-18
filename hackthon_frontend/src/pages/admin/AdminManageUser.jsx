@@ -97,7 +97,7 @@ export default function AdminManageUser() {
       case 'admin':
         return 'from-red-500 to-pink-500';
       case 'manager':
-        return 'from-purple-500 to-indigo-500';
+        return 'from-grey-500 to-indigo-500';
       case 'doctor':
         return 'from-blue-500 to-cyan-500';
       default:
@@ -198,7 +198,7 @@ export default function AdminManageUser() {
                 onClick={() => handlePageChange(pageNum)}
                 className={`px-3 py-2 rounded-lg transition-all ${
                   pageNum === currentPage
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-grey-600 to-blue-500 text-white shadow-lg'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
@@ -235,7 +235,7 @@ export default function AdminManageUser() {
 
   if (loading) {
     return (
-      <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           <span className="text-white text-lg">Loading users...</span>
@@ -245,8 +245,8 @@ export default function AdminManageUser() {
   }
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex overflow-hidden">
+      <div className="absolute top-0 left-0 w-96 h-96 bg-grey-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
       <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
 
@@ -255,7 +255,7 @@ export default function AdminManageUser() {
       
       <div className="flex-1 relative z-10 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-8">
-          <button onClick={() => navigate("/admin_home_page")} className="flex items-center gap-2 text-purple-300 hover:text-purple-200 transition-colors mb-8 group">
+          <button onClick={() => navigate("/admin_home_page")} className="flex items-center gap-2 text-grey-300 hover:text-grey-200 transition-colors mb-8 group">
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">Back to Dashboard</span>
           </button>
@@ -265,7 +265,7 @@ export default function AdminManageUser() {
 
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl shadow-lg shadow-blue-500/50">
+                <div className="p-4 bg-gradient-to-br from-blue-500 to-grey-500 rounded-2xl shadow-lg shadow-blue-500/50">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <div>

@@ -47,7 +47,7 @@ export default function UserHomePage() {
       case 'admin':
         return 'from-red-500 to-pink-500';
       case 'manager':
-        return 'from-purple-500 to-indigo-500';
+        return 'from-grey-500 to-indigo-500';
       case 'doctor':
         return 'from-blue-500 to-cyan-500';
       default:
@@ -70,7 +70,7 @@ export default function UserHomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           <span className="text-white text-lg">Loading dashboard...</span>
@@ -80,8 +80,8 @@ export default function UserHomePage() {
   }
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex overflow-hidden">
+      <div className="absolute top-0 left-0 w-96 h-96 bg-grey-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
       <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
 
@@ -114,7 +114,7 @@ export default function UserHomePage() {
                       <p className="text-gray-300 text-sm">My Teams</p>
                       <p className="text-3xl font-bold text-white">{userData.teams.length}</p>
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl">
+                    <div className="p-3 bg-gradient-to-br from-grey-500 to-blue-500 rounded-xl">
                       <Users className="w-6 h-6 text-white" />
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export default function UserHomePage() {
                           userData.skills.map((skill, index) => (
                             <span
                               key={index}
-                              className="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-full text-white text-sm"
+                              className="px-3 py-1 bg-gradient-to-r from-grey-500/20 to-blue-500/20 border border-grey-500/30 rounded-full text-white text-sm"
                             >
                               {skill}
                             </span>
@@ -224,7 +224,7 @@ export default function UserHomePage() {
                 
                 <div className="relative z-10">
                   <div className="flex items-center gap-4 mb-8">
-                    <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl shadow-lg shadow-blue-500/50">
+                    <div className="p-4 bg-gradient-to-br from-blue-500 to-grey-500 rounded-2xl shadow-lg shadow-blue-500/50">
                       <Users className="w-8 h-8 text-white" />
                     </div>
                     <div>

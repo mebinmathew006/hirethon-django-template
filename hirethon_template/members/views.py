@@ -7,7 +7,7 @@ from django.db.models import Q
 from datetime import datetime, date
 
 from .serializers import UserDashboardSerializer
-from hirethon_template.managers.models import Team, Slot, Availability, TeamMember, SwapRequest
+from hirethon_template.managers.models import Team, Slot, Availability, TeamMember, SwapRequest, LeaveRequest
 
 User = get_user_model()
 
@@ -198,7 +198,7 @@ def get_day_slots_view(request, year, month, day):
 @permission_classes([IsAuthenticated])
 def request_leave_view(request):
     """
-    API view to request leave for a specific date
+    API view to request leave for a specific date - now requires admin approval
     """
     if not request.user.is_active:
         return Response(
@@ -223,24 +223,62 @@ def request_leave_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Create or update availability record
-    availability, created = Availability.objects.update_or_create(
-        user=request.user,
-        date=target_date,
-        defaults={
-            'is_available': False,
-            'reason': reason
-        }
-    )
+    # Get user's teams
+    user_teams = Team.objects.filter(
+        members__user=request.user, 
+        members__is_active=True
+    ).distinct()
+    
+    if not user_teams.exists():
+        return Response(
+            {'error': {'commonError': 'You are not a member of any active team.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Create leave requests for each team the user belongs to
+    leave_requests = []
+    for team in user_teams:
+        # Check if leave request already exists for this user, team, and date
+        existing_request = LeaveRequest.objects.filter(
+            user=request.user,
+            team=team,
+            date=target_date
+        ).first()
+        
+        if not existing_request:
+            leave_request = LeaveRequest.objects.create(
+                user=request.user,
+                team=team,
+                date=target_date,
+                reason=reason,
+                status='pending'
+            )
+            leave_requests.append(leave_request)
+        else:
+            # Update existing request if it's pending
+            if existing_request.status == 'pending':
+                existing_request.reason = reason
+                existing_request.save()
+                leave_requests.append(existing_request)
+    
+    if not leave_requests:
+        return Response(
+            {'error': {'commonError': 'You already have a pending or processed leave request for this date.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
     return Response({
-        'message': 'Leave request submitted successfully.',
-        'availability': {
-            'id': availability.id,
-            'date': availability.date.isoformat(),
-            'is_available': availability.is_available,
-            'reason': availability.reason
-        }
+        'message': 'Leave request submitted successfully. Please wait for admin approval.',
+        'leave_requests': [
+            {
+                'id': req.id,
+                'team_name': req.team.name,
+                'date': req.date.isoformat(),
+                'reason': req.reason,
+                'status': req.status
+            }
+            for req in leave_requests
+        ]
     }, status=status.HTTP_200_OK)
 
 

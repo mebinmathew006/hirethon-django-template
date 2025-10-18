@@ -65,9 +65,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen h-screen w-screen min-w-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen h-screen w-screen min-w-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex items-center justify-center relative overflow-hidden">
       {/* Animated gradient orbs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+      <div className="absolute top-0 left-0 w-96 h-96 bg-grey-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-700"></div>
       <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
 
@@ -80,7 +80,7 @@ export default function LoginPage() {
         <div className="flex-1 hidden lg:block">
           <div className="mb-12">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg shadow-purple-500/50">
+              <div className="p-3 bg-gradient-to-br from-grey-500 to-blue-500 rounded-2xl shadow-lg shadow-grey-500/50">
                 <Calendar className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-5xl font-bold text-white">
@@ -143,7 +143,7 @@ export default function LoginPage() {
 
             {/* Logo for mobile */}
             <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-              <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl shadow-lg">
+              <div className="p-2 bg-gradient-to-br from-grey-500 to-blue-500 rounded-xl shadow-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-3xl font-bold text-white">TimeSync</h1>
@@ -151,7 +151,7 @@ export default function LoginPage() {
 
             {/* Header */}
             <div className="text-center mb-8 relative z-10">
-              <h2 className="text-4xl font-bold text-white mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-white">
+              <h2 className="text-4xl font-bold text-white mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-grey-200 to-white">
                 Welcome Back
               </h2>
               <p className="text-gray-300 text-lg">
@@ -172,7 +172,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-2xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                  className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-2xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                   placeholder="you@example.com"
                 />
               </div>
@@ -189,7 +189,7 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-2xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                    className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-2xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                     placeholder="••••••••••••"
                   />
                   <button
@@ -207,7 +207,7 @@ export default function LoginPage() {
               </div>
               <button 
                 type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 via-purple-500 to-blue-500 hover:from-purple-500 hover:via-purple-400 hover:to-blue-400 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-400/60 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden group"
+                className="w-full bg-gradient-to-r from-grey-600 via-grey-500 to-blue-500 hover:from-grey-500 hover:via-grey-400 hover:to-blue-400 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-2xl shadow-grey-500/50 hover:shadow-grey-400/60 focus:outline-none focus:ring-4 focus:ring-grey-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden group"
               >
                 <span className="relative z-10">Sign In</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
@@ -222,7 +222,7 @@ export default function LoginPage() {
 
               <p className="text-center text-gray-300 text-sm">
                 Don't have an account?{" "}
-                <button className="font-semibold text-purple-300 hover:text-purple-200 transition-colors">
+                <button className="font-semibold text-grey-300 hover:text-grey-200 transition-colors">
                   Sign up free
                 </button>
               </p>

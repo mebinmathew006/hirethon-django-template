@@ -160,3 +160,171 @@ def cleanup_old_slots_task(self, days_to_keep=30):
     except Exception as exc:
         logger.error(f"Slot cleanup task failed: {str(exc)}", exc_info=True)
         raise exc
+
+
+def check_empty_slots_notification_function():
+    """
+    Standalone function to check for empty slots within next 72 hours and send notifications
+    This can be called directly without Celery
+    """
+    logger.info("Starting empty slots check function")
+    
+    try:
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+        from .models import Slot, Team, Alert
+        from django.contrib.auth import get_user_model
+        
+        User = get_user_model()
+        
+        # Calculate time window (next 72 hours)
+        now = timezone.now()
+        end_time = now + timedelta(hours=72)
+        
+        # Find empty slots within the next 72 hours
+        empty_slots = Slot.objects.filter(
+            start_time__gte=now,
+            start_time__lte=end_time,
+            assigned_member__isnull=True
+        ).select_related('team').order_by('start_time')
+        
+        if empty_slots.exists():
+            # Get all managers to notify
+            managers = User.objects.filter(is_manager=True, is_active=True)
+            
+            # Group slots by team and time
+            notifications = []
+            for slot in empty_slots:
+                slot_data = {
+                    'slot_id': slot.id,
+                    'team_id': slot.team.id,
+                    'team_name': slot.team.name,
+                    'start_time': slot.start_time.isoformat(),
+                    'end_time': slot.end_time.isoformat(),
+                    'hours_from_now': round((slot.start_time - now).total_seconds() / 3600, 1)
+                }
+                notifications.append(slot_data)
+            
+            # Update the notification status in cache/database
+            # For now, we'll store in cache - later this can be WebSocket
+            from django.core.cache import cache
+            
+            notification_key = "empty_slots_notifications"
+            existing_notifications = cache.get(notification_key, [])
+            
+            # Add new notifications (avoid duplicates)
+            for notification in notifications:
+                if not any(n['slot_id'] == notification['slot_id'] for n in existing_notifications):
+                    existing_notifications.append({
+                        **notification,
+                        'notification_time': now.isoformat(),
+                        'type': 'empty_slot'
+                    })
+            
+            # Store in cache for 24 hours
+            cache.set(notification_key, existing_notifications, 86400)
+            
+            # Create Alert records for each empty slot (avoid duplicates)
+            alerts_created = 0
+            new_alerts = []
+            for slot in empty_slots:
+                # Check if alert already exists for this slot (not resolved)
+                existing_alert = Alert.objects.filter(
+                    slot=slot,
+                    resolved=False
+                ).first()
+                
+                if not existing_alert:
+                    message = f"Empty slot detected: {slot.team.name} on {slot.start_time.strftime('%Y-%m-%d %H:%M')} - {slot.end_time.strftime('%Y-%m-%d %H:%M')} ({round((slot.start_time - now).total_seconds() / 3600, 1)} hours from now)"
+                    
+                    alert = Alert.objects.create(
+                        team=slot.team,
+                        slot=slot,
+                        message=message
+                    )
+                    alerts_created += 1
+                    new_alerts.append(alert)
+            
+            logger.info(f"Found {empty_slots.count()} empty slots in next 72 hours, created {alerts_created} new alerts")
+            
+            # Send WebSocket notifications for new alerts
+            if new_alerts:
+                send_websocket_notifications.delay([alert.id for alert in new_alerts])
+            
+            return {
+                "success": True,
+                "empty_slots_count": empty_slots.count(),
+                "notifications_created": len(notifications),
+                "alerts_created": alerts_created,
+                "time_window": {
+                    "from": now.isoformat(),
+                    "to": end_time.isoformat()
+                }
+            }
+        else:
+            logger.info("No empty slots found in next 72 hours")
+            return {
+                "success": True,
+                "empty_slots_count": 0,
+                "message": "No empty slots found"
+            }
+            
+    except Exception as exc:
+        logger.error(f"Empty slots check function failed: {str(exc)}", exc_info=True)
+        raise exc
+
+
+@celery_app.task(bind=True)
+def check_empty_slots_notification_task(self):
+    """
+    Celery task wrapper for the notification check function
+    """
+    return check_empty_slots_notification_function()
+
+
+@celery_app.task
+def send_websocket_notifications(alert_ids):
+    """
+    Send WebSocket notifications for new alerts
+    """
+    try:
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        from .models import Alert
+        
+        # Get the alerts
+        alerts = Alert.objects.filter(id__in=alert_ids).select_related('slot', 'team')
+        
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            for alert in alerts:
+                hours_from_now = round((alert.slot.start_time - timezone.now()).total_seconds() / 3600, 1)
+                
+                notification_data = {
+                    'slot_id': alert.slot.id,
+                    'team_id': alert.team.id,
+                    'team_name': alert.team.name,
+                    'start_time': alert.slot.start_time.isoformat(),
+                    'end_time': alert.slot.end_time.isoformat(),
+                    'notification_time': alert.created_at.isoformat(),
+                    'type': 'empty_slot_alert',
+                    'alert_id': alert.id,
+                    'message': alert.message,
+                    'hours_from_now': hours_from_now,
+                    'is_empty': True,
+                    'assigned_user': None
+                }
+                
+                async_to_sync(channel_layer.group_send)(
+                    'admin_notifications',
+                    {
+                        'type': 'send_alert',
+                        'data': notification_data,
+                        'timestamp': alert.created_at.isoformat()
+                    }
+                )
+            
+            logger.info(f"Sent WebSocket notifications for {len(alerts)} new alerts")
+        
+    except Exception as e:
+        logger.error(f"Failed to send WebSocket notifications: {str(e)}", exc_info=True)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, UserPlus, ArrowLeft, Shield, Eye, EyeOff, Clock, Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Users, UserPlus, ArrowLeft, Shield, Eye, EyeOff, Clock, Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, UserCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getTeamsManagementRoute, toggleTeamStatusRoute } from "../../services/userService";
 import { toast } from "react-toastify";
@@ -80,6 +80,10 @@ export default function AdminViewTeam() {
 
   const handleAddMember = (teamId) => {
     navigate(`/add-team-member/${teamId}`);
+  };
+
+  const handleViewMembers = (teamId) => {
+    navigate(`/view-team-members/${teamId}`);
   };
 
   const formatDate = (dateString) => {
@@ -170,7 +174,7 @@ export default function AdminViewTeam() {
                 onClick={() => handlePageChange(pageNum)}
                 className={`px-3 py-2 rounded-lg transition-all ${
                   pageNum === currentPage
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-grey-600 to-blue-500 text-white shadow-lg'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
@@ -207,7 +211,7 @@ export default function AdminViewTeam() {
 
   if (loading) {
     return (
-      <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           <span className="text-white text-lg">Loading teams...</span>
@@ -217,8 +221,8 @@ export default function AdminViewTeam() {
   }
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex overflow-hidden">
+      <div className="absolute top-0 left-0 w-96 h-96 bg-grey-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
       <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
 
@@ -227,7 +231,7 @@ export default function AdminViewTeam() {
       
       <div className="flex-1 relative z-10 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-8">
-          <button onClick={() => navigate("/admin_home_page")} className="flex items-center gap-2 text-purple-300 hover:text-purple-200 transition-colors mb-8 group">
+          <button onClick={() => navigate("/admin_home_page")} className="flex items-center gap-2 text-grey-300 hover:text-grey-200 transition-colors mb-8 group">
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">Back to Dashboard</span>
           </button>
@@ -237,7 +241,7 @@ export default function AdminViewTeam() {
 
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg shadow-purple-500/50">
+                <div className="p-4 bg-gradient-to-br from-grey-500 to-blue-500 rounded-2xl shadow-lg shadow-grey-500/50">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -287,7 +291,6 @@ export default function AdminViewTeam() {
                                   </div>
                                   <div>
                                     <h3 className="text-lg font-semibold text-white">{team.name}</h3>
-                                    <p className="text-sm text-gray-400">ID: {team.id}</p>
                                   </div>
                                 </div>
                               </td>
@@ -322,13 +325,20 @@ export default function AdminViewTeam() {
                                 </div>
                               </td>
                               <td className="px-6 py-4">
-                                <div className="flex items-center justify-center gap-2">
+                                <div className="flex items-center justify-center gap-2 flex-wrap">
+                                  <button
+                                    onClick={() => handleViewMembers(team.id)}
+                                    className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white py-2 px-4 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200"
+                                  >
+                                    <UserCheck className="w-4 h-4" />
+                                    View
+                                  </button>
                                   <button
                                     onClick={() => handleAddMember(team.id)}
-                                    className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white py-2 px-4 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200"
+                                    className="flex items-center gap-1 bg-gradient-to-r from-grey-600 to-blue-500 hover:from-grey-500 hover:to-blue-400 text-white py-2 px-4 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-grey-500/50 transition-all duration-200"
                                   >
                                     <UserPlus className="w-4 h-4" />
-                                    Add Member
+                                    Add
                                   </button>
                                   <button
                                     onClick={() => handleToggleTeamStatus(team.id, team.is_active)}

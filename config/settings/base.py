@@ -84,6 +84,7 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
     "dj_rest_auth",
     "dj_rest_auth.registration",
+    "channels",
 ]
 
 LOCAL_APPS = [
@@ -418,3 +419,14 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
+
+# CHANNELS
+# ------------------------------------------------------------------------------
+# https://channels.readthedocs.io/en/stable/
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}

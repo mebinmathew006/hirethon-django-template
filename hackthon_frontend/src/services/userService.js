@@ -109,3 +109,41 @@ export const respondToSwapRequestRoute = async (swapRequestId, action) => {
     });
     return response;
 }
+
+// Leave Request Management (Admin)
+export const getLeaveRequestsRoute = async (page = 1, pageSize = 10, status = 'pending') => {
+    const response = await axiosInstance.get(`/api/managers/leave-requests/?page=${page}&page_size=${pageSize}&status=${status}`);
+    return response;
+}
+
+export const approveRejectLeaveRequestRoute = async (leaveRequestId, action) => {
+    const response = await axiosInstance.post(`/api/managers/leave-requests/${leaveRequestId}/approve-reject/`, {
+        action: action
+    });
+    return response;
+}
+
+// Slot Management (Admin)
+export const getAvailableUsersForSlotRoute = async (slotId) => {
+    const response = await axiosInstance.get(`/api/managers/slots/${slotId}/available-users/`);
+    return response;
+}
+
+export const assignUserToSlotRoute = async (slotId, userId) => {
+    const response = await axiosInstance.post(`/api/managers/slots/${slotId}/assign-user/`, {
+        user_id: userId
+    });
+    return response;
+}
+
+// Team Members Schedule (Admin)
+export const getTeamMembersWithScheduleRoute = async (teamId, page = 1, pageSize = 10) => {
+    const response = await axiosInstance.get(`/api/managers/teams/${teamId}/members-schedule/?page=${page}&page_size=${pageSize}`);
+    return response;
+}
+
+// Dashboard Statistics (Admin)
+export const getDashboardStatsRoute = async () => {
+    const response = await axiosInstance.get(`/api/managers/dashboard-stats/`);
+    return response;
+}

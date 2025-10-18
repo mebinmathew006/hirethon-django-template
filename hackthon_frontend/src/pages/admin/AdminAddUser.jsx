@@ -193,8 +193,8 @@ export default function AdminAddUser() {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
-    <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex overflow-hidden">
+    <div className="absolute top-0 left-0 w-96 h-96 bg-grey-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
     <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
     <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
 
@@ -202,7 +202,7 @@ export default function AdminAddUser() {
 <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 <div className="flex-1 relative z-10 overflow-y-auto">
         <div className="max-w-5xl mx-auto">
-          <button onClick={()=>navigate(-1)} className="flex items-center gap-2 text-purple-300 hover:text-purple-200 transition-colors mb-8 group">
+          <button onClick={()=>navigate(-1)} className="flex items-center gap-2 text-grey-300 hover:text-grey-200 transition-colors mb-8 group">
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">Back to Dashboard</span>
           </button>
@@ -212,7 +212,7 @@ export default function AdminAddUser() {
 
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg shadow-purple-500/50">
+                <div className="p-4 bg-gradient-to-br from-grey-500 to-blue-500 rounded-2xl shadow-lg shadow-grey-500/50">
                   <UserPlus className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -272,7 +272,7 @@ export default function AdminAddUser() {
                       value={formData.name}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                       placeholder="John Doe"
                     />
                     {errors.name && touched.name && (
@@ -291,7 +291,7 @@ export default function AdminAddUser() {
                       value={formData.email}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                       placeholder="john@example.com"
                     />
                     {errors.email && touched.email && (
@@ -313,7 +313,7 @@ export default function AdminAddUser() {
                         value={formData.password}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                         placeholder="••••••••"
                       />
                       <button
@@ -341,7 +341,7 @@ export default function AdminAddUser() {
                         value={formData.confirmPassword}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                         placeholder="••••••••"
                       />
                       <button
@@ -368,7 +368,7 @@ export default function AdminAddUser() {
                     type="text"
                     value={formData.skills}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                    className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                     placeholder="JavaScript, React, Python, Django"
                   />
                   <p className="mt-1 text-xs text-gray-400">Enter skills separated by commas</p>
@@ -382,10 +382,10 @@ export default function AdminAddUser() {
                       name="is_manager"
                       checked={formData.is_manager}
                       onChange={handleChange}
-                      className="w-5 h-5 rounded-lg border-2 border-white/30 bg-white/10 checked:bg-gradient-to-br checked:from-purple-500 checked:to-blue-500 focus:ring-2 focus:ring-purple-500 cursor-pointer transition-all"
+                      className="w-5 h-5 rounded-lg border-2 border-white/30 bg-white/10 checked:bg-gradient-to-br checked:from-grey-500 checked:to-blue-500 focus:ring-2 focus:ring-grey-500 cursor-pointer transition-all"
                     />
                     <div>
-                      <span className="text-white font-semibold group-hover:text-purple-200 transition-colors">
+                      <span className="text-white font-semibold group-hover:text-grey-200 transition-colors">
                         Manager Role
                       </span>
                       <p className="text-sm text-gray-400">Grant manager permissions to this user</p>
@@ -397,7 +397,7 @@ export default function AdminAddUser() {
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-500 hover:from-purple-500 hover:via-purple-400 hover:to-blue-400 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-400/60 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-gradient-to-r from-grey-600 via-grey-500 to-blue-500 hover:from-grey-500 hover:via-grey-400 hover:to-blue-400 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-2xl shadow-grey-500/50 hover:shadow-grey-400/60 focus:outline-none focus:ring-4 focus:ring-grey-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="relative z-10">
                       {isSubmitting ? (

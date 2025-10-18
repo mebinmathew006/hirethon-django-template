@@ -219,8 +219,8 @@ export default function AdminAddTeam() {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
-    <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex overflow-hidden">
+    <div className="absolute top-0 left-0 w-96 h-96 bg-grey-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
     <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
     <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
 
@@ -228,7 +228,7 @@ export default function AdminAddTeam() {
 <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 <div className="flex-1 relative z-10 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
-          <button onClick={()=>navigate(-1)} className="flex items-center gap-2 text-purple-300 hover:text-purple-200 transition-colors mb-8 group">
+          <button onClick={()=>navigate(-1)} className="flex items-center gap-2 text-grey-300 hover:text-grey-200 transition-colors mb-8 group">
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">Back to Dashboard</span>
           </button>
@@ -297,7 +297,7 @@ export default function AdminAddTeam() {
                     value={formData.name}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg text-lg"
+                    className="w-full px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg text-lg"
                     placeholder="Engineering Team Alpha"
                   />
                   {errors.name && touched.name && (
@@ -321,7 +321,7 @@ export default function AdminAddTeam() {
                           className={`py-3 px-4 rounded-xl font-semibold transition-all duration-200 ${
                             formData.slot_duration_hours === preset.hours.toString() &&
                             formData.slot_duration_minutes === preset.minutes.toString()
-                              ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-500/50'
+                              ? 'bg-gradient-to-r from-grey-600 to-blue-500 text-white shadow-lg shadow-grey-500/50'
                               : 'bg-white/10 text-gray-300 hover:bg-white/20 border border-white/20'
                           }`}
                         >
@@ -347,7 +347,7 @@ export default function AdminAddTeam() {
                           value={formData.slot_duration_hours}
                           onChange={handleChange}
                           onBlur={handleBlur}
-                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                           placeholder="1"
                         />
                       </div>
@@ -365,7 +365,7 @@ export default function AdminAddTeam() {
                           value={formData.slot_duration_minutes}
                           onChange={handleChange}
                           onBlur={handleBlur}
-                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                           placeholder="0"
                         />
                       </div>
@@ -397,7 +397,7 @@ export default function AdminAddTeam() {
                           value={formData.max_hours_per_day}
                           onChange={handleChange}
                           onBlur={handleBlur}
-                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                           placeholder="8"
                         />
                         {errors.max_hours_per_day && touched.max_hours_per_day && (
@@ -418,7 +418,7 @@ export default function AdminAddTeam() {
                           value={formData.max_hours_per_week}
                           onChange={handleChange}
                           onBlur={handleBlur}
-                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                           placeholder="40"
                         />
                         {errors.max_hours_per_week && touched.max_hours_per_week && (
@@ -439,7 +439,7 @@ export default function AdminAddTeam() {
                           value={formData.min_rest_hours}
                           onChange={handleChange}
                           onBlur={handleBlur}
-                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-gray-400 focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg"
                           placeholder="8"
                         />
                         {errors.min_rest_hours && touched.min_rest_hours && (
@@ -450,9 +450,9 @@ export default function AdminAddTeam() {
                   </div>
                 </div>
 
-                <div className="backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-6 border border-purple-500/30">
+                <div className="backdrop-blur-xl bg-gradient-to-r from-grey-500/10 to-blue-500/10 rounded-xl p-6 border border-grey-500/30">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg mt-1">
+                    <div className="p-2 bg-gradient-to-br from-grey-500 to-blue-500 rounded-lg mt-1">
                       <Shield className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -468,7 +468,7 @@ export default function AdminAddTeam() {
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-500 hover:from-purple-500 hover:via-purple-400 hover:to-blue-400 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-400/60 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-gradient-to-r from-grey-600 via-grey-500 to-blue-500 hover:from-grey-500 hover:via-grey-400 hover:to-blue-400 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-2xl shadow-grey-500/50 hover:shadow-grey-400/60 focus:outline-none focus:ring-4 focus:ring-grey-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="relative z-10">
                       {isSubmitting ? (

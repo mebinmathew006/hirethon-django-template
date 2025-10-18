@@ -224,7 +224,7 @@ export default function AdminAddTeamMember() {
 
   if (loading) {
     return (
-      <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           <span className="text-white text-lg">Loading...</span>
@@ -234,8 +234,8 @@ export default function AdminAddTeamMember() {
   }
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div className="min-h-screen h-screen bg-gradient-to-br from-black via-gray-800 to-gray-900 flex overflow-hidden">
+      <div className="absolute top-0 left-0 w-96 h-96 bg-grey-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
       <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
 
@@ -243,7 +243,7 @@ export default function AdminAddTeamMember() {
       <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       <div className="flex-1 relative z-10 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-8">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-purple-300 hover:text-purple-200 transition-colors mb-8 group">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-grey-300 hover:text-grey-200 transition-colors mb-8 group">
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">Back to Dashboard</span>
           </button>
@@ -312,7 +312,7 @@ export default function AdminAddTeamMember() {
                     </label>
                     <div className="w-full px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white shadow-lg text-lg">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg">
+                        <div className="p-2 bg-gradient-to-br from-grey-500 to-blue-500 rounded-lg">
                           <Users className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -333,7 +333,7 @@ export default function AdminAddTeamMember() {
                       value={formData.team || ""}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      className="w-full px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg text-lg"
+                      className="w-full px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg text-lg"
                     >
                       <option value="" className="bg-gray-800">Choose a team...</option>
                       {/* This will be handled by legacy support */}
@@ -354,7 +354,7 @@ export default function AdminAddTeamMember() {
                     value={formData.user}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg text-lg"
+                    className="w-full px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white focus:bg-white/20 focus:ring-2 focus:ring-grey-500 focus:border-transparent focus:outline-none transition-all duration-300 shadow-lg text-lg"
                   >
                     <option value="" className="bg-gray-800">Choose a user...</option>
                     {users.map((user) => (
@@ -387,16 +387,16 @@ export default function AdminAddTeamMember() {
                         onChange={handleChange}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-grey-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-grey-600"></div>
                     </label>
                   </div>
                 </div>
 
                 {/* Selected Information Display */}
                 {(formData.team || formData.user) && (
-                  <div className="backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-6 border border-purple-500/30">
+                  <div className="backdrop-blur-xl bg-gradient-to-r from-grey-500/10 to-blue-500/10 rounded-xl p-6 border border-grey-500/30">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg mt-1">
+                      <div className="p-2 bg-gradient-to-br from-grey-500 to-blue-500 rounded-lg mt-1">
                         <Calendar className="w-5 h-5 text-white" />
                       </div>
                       <div>

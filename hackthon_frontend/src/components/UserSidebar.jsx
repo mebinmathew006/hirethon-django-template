@@ -38,7 +38,7 @@ export default function UserSidebar({
       case 'admin':
         return 'from-red-500 to-pink-500';
       case 'manager':
-        return 'from-purple-500 to-indigo-500';
+        return 'from-grey-500 to-indigo-500';
       case 'doctor':
         return 'from-blue-500 to-cyan-500';
       default:
@@ -65,7 +65,7 @@ export default function UserSidebar({
         <div className="flex items-center justify-between mb-8">
           {isSidebarOpen && (
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl shadow-lg">
+              <div className="p-2 bg-gradient-to-br from-grey-500 to-blue-500 rounded-xl shadow-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-white">TimeSync</h1>
@@ -105,7 +105,7 @@ export default function UserSidebar({
             onClick={() => navigate("/user/home")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
               activeTab === "dashboard" 
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-500/50" 
+                ? "bg-gradient-to-r from-grey-600 to-blue-500 text-white shadow-lg shadow-grey-500/50" 
                 : "text-gray-300 hover:bg-white/10"
             }`}
           >
@@ -117,7 +117,7 @@ export default function UserSidebar({
             onClick={() => navigate("/user/schedule")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
               activeTab === "schedule" 
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-500/50" 
+                ? "bg-gradient-to-r from-grey-600 to-blue-500 text-white shadow-lg shadow-grey-500/50" 
                 : "text-gray-300 hover:bg-white/10"
             }`}
           >
@@ -129,7 +129,7 @@ export default function UserSidebar({
             onClick={() => navigate("/user/teams")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
               activeTab === "teams" 
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-500/50" 
+                ? "bg-gradient-to-r from-grey-600 to-blue-500 text-white shadow-lg shadow-grey-500/50" 
                 : "text-gray-300 hover:bg-white/10"
             }`}
           >
@@ -141,7 +141,7 @@ export default function UserSidebar({
             onClick={() => navigate("/user/settings")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
               activeTab === "settings" 
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-500/50" 
+                ? "bg-gradient-to-r from-grey-600 to-blue-500 text-white shadow-lg shadow-grey-500/50" 
                 : "text-gray-300 hover:bg-white/10"
             }`}
           >
