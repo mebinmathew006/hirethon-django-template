@@ -81,5 +81,10 @@ CORS_ALLOWED_ORIGINS = [
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 
+# JWT Cookie settings for development
+JWT_AUTH_SECURE = False  # Set to False for development (HTTP)
+JWT_AUTH_SAMESITE = 'Lax'
+JWT_AUTH_COOKIE_DOMAIN = None  # Allow for localhost
+
 # Your stuff...
 # ------------------------------------------------------------------------------

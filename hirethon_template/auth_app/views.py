@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -26,12 +27,11 @@ def login_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Authenticate user
     user = authenticate(request=request, email=email, password=password)
     
     if not user:
         return Response(
-            {'error': {'commonError': 'Invalid email or password.'}},
+            {'error': 'Invalid email or password.'},
             status=status.HTTP_401_UNAUTHORIZED
         )
     
@@ -54,20 +54,26 @@ def login_view(request):
         'id': user.id,
         'email': user.email,
         'name': user.name,
-        'is_verified': user.is_verified,
         'is_active': user.is_active,
-        'role': user.role,
         'is_manager': user.is_manager,
-        'skills': user.skills,
-        'max_hours_per_day': user.max_hours_per_day,
-        'max_hours_per_week': user.max_hours_per_week,
-        'min_rest_hours': user.min_rest_hours,
-        'date_joined': user.date_joined.isoformat(),
-        'last_login': user.last_login.isoformat() if user.last_login else None,
     }
     
-    return Response({
+    # Create response with user data and access token
+    response = Response({
         'user': user_data,
         'access_token': str(access_token),
-        'refresh_token': str(refresh)
     }, status=status.HTTP_200_OK)
+    
+    refresh_token_max_age = 7 * 24 * 60 * 60  
+    
+    response.set_cookie(
+        key='refresh_token',
+        value=str(refresh),
+        max_age=refresh_token_max_age,
+        httponly=True,  # Prevent XSS attacks
+        secure=getattr(settings, 'JWT_AUTH_SECURE', False),  
+        samesite=getattr(settings, 'JWT_AUTH_SAMESITE', 'Lax'),
+        domain=getattr(settings, 'JWT_AUTH_COOKIE_DOMAIN', None)
+    )
+    
+    return response

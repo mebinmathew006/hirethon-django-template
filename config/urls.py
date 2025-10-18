@@ -23,7 +23,7 @@ urlpatterns = [
     path("users/", include("hirethon_template.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
-    path("managers/", include("hirethon_template.managers.urls", namespace="managers")),
+    path("api/managers/", include("hirethon_template.managers.urls", namespace="managers")),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
