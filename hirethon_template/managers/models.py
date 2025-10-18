@@ -32,20 +32,58 @@ class Holiday(models.Model):
 
 class Availability(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="availability")
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    is_hard_block = models.BooleanField(default=True)  # True = PTO / unavailability, False = soft preference
+    date = models.DateField()  # The date when the user is available/unavailable
+    is_available = models.BooleanField(default=True)  # True = available for on-call, False = unavailable (PTO, etc.)
+    reason = models.CharField(max_length=255, blank=True, help_text="Reason for unavailability (e.g., 'PTO', 'Sick leave')")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('user', 'date')
+        verbose_name_plural = 'availabilities'
+    
+    def __str__(self):
+        status = "Available" if self.is_available else "Unavailable"
+        return f"{self.user.name} - {self.date} ({status})"
 
 
 class Slot(models.Model):
+    """
+    Represents an on-call shift/slot for a team
+    """
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="slots")
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     assigned_member = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_slots')
     is_holiday = models.BooleanField(default=False)
+    is_covered = models.BooleanField(default=False, help_text="True if the slot is covered by an assigned member")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         unique_together = ('team', 'start_time')
+        ordering = ['start_time']
+    
+    def __str__(self):
+        if self.assigned_member:
+            return f"{self.team.name} - {self.start_time.strftime('%Y-%m-%d %H:%M')} ({self.assigned_member.name})"
+        return f"{self.team.name} - {self.start_time.strftime('%Y-%m-%d %H:%M')} (Unassigned)"
+    
+    @property
+    def date(self):
+        """Get the date of this slot"""
+        return self.start_time.date()
+    
+    @property
+    def duration(self):
+        """Get the duration of this slot"""
+        return self.end_time - self.start_time
+    
+    def is_active_now(self):
+        """Check if this slot is currently active"""
+        from django.utils import timezone
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time
 
 class SwapRequest(models.Model):
     slot = models.ForeignKey(Slot, on_delete=models.CASCADE, related_name='swap_requests')

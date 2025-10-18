@@ -1,18 +1,22 @@
+import logging
 from django.core.mail import send_mail
 from django.conf import settings
 import os
+
+logger = logging.getLogger(__name__)
 
 
 def send_user_credentials_email(user_email, user_name, password, is_manager=False):
     """
     Send an email with user credentials to the newly created user
     """
+    logger.info(f"Attempting to send credentials email to {user_email}")
+    
     subject = 'Welcome! Your Account Has Been Created'
     
     role = "Manager" if is_manager else "User"
     
-    message = f"""
-Dear {user_name},
+    message = f"""Dear {user_name},
 
 Welcome to our platform! Your account has been successfully created.
 
@@ -31,76 +35,33 @@ Best regards,
 The Team
 """
     
-    # Use DEFAULT_FROM_EMAIL from settings, fallback to care@spicelush.com
+    # Use DEFAULT_FROM_EMAIL from settings
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'care@spicelush.com')
     
-    # Check if SMTP configuration is available from environment variables
-    smtp_host = os.getenv('EMAIL_HOST')
-    smtp_user = os.getenv('EMAIL_HOST_USER')
-    smtp_password = os.getenv('EMAIL_HOST_PASSWORD')
-    
-    # Fallback to hardcoded values if environment variables are not available
-    if not smtp_host:
-        smtp_host = 'smtp.gmail.com'
-    if not smtp_user:
-        smtp_user = 'mebinmathew006@gmail.com'
-    if not smtp_password:
-        smtp_password = 'qopm tqga anur yotk'
+    logger.info(f"Email configuration: FROM={from_email}, TO={user_email}, BACKEND={getattr(settings, 'EMAIL_BACKEND', 'default')}")
     
     try:
-        # Use SMTP configuration (either from env vars or fallback values)
-        if smtp_host and smtp_user and smtp_password:
-            # Temporarily set SMTP configuration
-            original_backend = settings.EMAIL_BACKEND
-            original_host = getattr(settings, 'EMAIL_HOST', None)
-            original_port = getattr(settings, 'EMAIL_PORT', None)
-            original_use_tls = getattr(settings, 'EMAIL_USE_TLS', None)
-            original_host_user = getattr(settings, 'EMAIL_HOST_USER', None)
-            original_host_password = getattr(settings, 'EMAIL_HOST_PASSWORD', None)
-            
-            settings.EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-            settings.EMAIL_HOST = smtp_host
-            settings.EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-            settings.EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-            settings.EMAIL_HOST_USER = smtp_user
-            settings.EMAIL_HOST_PASSWORD = smtp_password
-            
-            try:
-                result = send_mail(
-                    subject,
-                    message,
-                    from_email,
-                    [user_email],
-                    fail_silently=False,
-                )
-                return True
-            finally:
-                # Restore original settings
-                settings.EMAIL_BACKEND = original_backend
-                if original_host is not None:
-                    settings.EMAIL_HOST = original_host
-                if original_port is not None:
-                    settings.EMAIL_PORT = original_port
-                if original_use_tls is not None:
-                    settings.EMAIL_USE_TLS = original_use_tls
-                if original_host_user is not None:
-                    settings.EMAIL_HOST_USER = original_host_user
-                if original_host_password is not None:
-                    settings.EMAIL_HOST_PASSWORD = original_host_password
-        else:
-            # Use default Django mail configuration
-            send_mail(
-                subject,
-                message,
-                from_email,
-                [user_email],
-                fail_silently=False,
-            )
-            return True
+        # Check current email backend configuration
+        email_backend = getattr(settings, 'EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+        email_host = getattr(settings, 'EMAIL_HOST', None)
+        email_user = getattr(settings, 'EMAIL_HOST_USER', None)
+        
+        logger.info(f"Current email settings: BACKEND={email_backend}, HOST={email_host}, USER={email_user}")
+        
+        # Send the email using Django's configured email backend
+        result = send_mail(
+            subject,
+            message,
+            from_email,
+            [user_email],
+            fail_silently=False,
+        )
+        
+        logger.info(f"Email sent successfully to {user_email}, result: {result}")
+        return True
             
     except Exception as e:
-        # Log the error (in production, you might want to use Django's logging here)
-        print(f"Failed to send email to {user_email}: {str(e)}")
+        logger.error(f"Failed to send email to {user_email}: {str(e)}", exc_info=True)
         return False
 
 

@@ -317,20 +317,18 @@ class CreateTeamMemberSerializer(serializers.ModelSerializer):
         today = timezone.now().date()
         start_of_week = today - timedelta(days=today.weekday())  # Monday
         
-        # Create availability slots for each day of the week (7 days)
+        # Create availability records for each day of the week (7 days)
         for day_offset in range(7):
-            current_day = start_of_week + timedelta(days=day_offset)
+            current_day = start_of_week.date() + timedelta(days=day_offset)
             
-            # Set availability for the entire day (00:00 to 23:59)
-            start_datetime = timezone.make_aware(datetime.combine(current_day, time.min))
-            end_datetime = timezone.make_aware(datetime.combine(current_day, time.max))
-            
-            # Create availability record (is_hard_block=False means available)
-            Availability.objects.create(
+            # Create availability record for the date (user is available)
+            Availability.objects.get_or_create(
                 user=user,
-                start_time=start_datetime,
-                end_time=end_datetime,
-                is_hard_block=False  # False means available/not blocked
+                date=current_day,
+                defaults={
+                    'is_available': True,  # User is available for on-call on this date
+                    'reason': ''  # No reason needed for availability
+                }
             )
         
         return team_member

@@ -1,9 +1,33 @@
 import React from "react";
 import { Users, UserPlus, Calendar, Settings, LogOut, Menu, X, BarChart3, UserCheck, UserCog } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { destroyDetails } from "../store/UserDetailsSlice";
+import { logoutRoute } from "../services/userService";
+import { toast } from "react-toastify";
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await logoutRoute();
+      dispatch(destroyDetails());
+      toast.success("Logged out successfully", {
+        position: "bottom-center",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if the logout request fails, we should clear local state
+      dispatch(destroyDetails());
+      toast.error("Error during logout, but you have been logged out locally", {
+        position: "bottom-center",
+      });
+      navigate("/");
+    }
+  };
 
   return (
     <div className={`relative z-20 ${isSidebarOpen ? 'w-72' : 'w-20'} transition-all duration-300 backdrop-blur-xl bg-white/5 border-r border-white/10`}>
@@ -81,7 +105,10 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           </button>
         </nav>
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-300 hover:bg-red-500/10 transition-all mt-4">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-300 hover:bg-red-500/10 transition-all mt-4"
+        >
           <LogOut className="w-5 h-5" />
           {isSidebarOpen && <span className="font-medium">Logout</span>}
         </button>

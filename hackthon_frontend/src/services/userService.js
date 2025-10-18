@@ -57,9 +57,14 @@ export const toggleUserStatusRoute = async (userId) => {
     return response;
 }
 
+export const getUserDashboardRoute = async () => {
+    const response = await axiosInstance.get('/api/members/dashboard/');
+    return response;
+}
+
 export const logoutRoute = async () => {
-    const response = await axios.post('/api/logout/')
-    return response.data
+    const response = await axiosInstance.post('/api/auth/logout/');
+    return response;
 }
 export const getUserDetailsRoute = async () => {
     const response = await axios.get('/api/user/')

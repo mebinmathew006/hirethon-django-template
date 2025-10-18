@@ -64,12 +64,31 @@ def create_user_view(request):
             user = serializer.save()
             
             # Trigger email sending as a background task
-            send_user_credentials_email_task.delay(
-                user_email=user_email,
-                user_name=user_name,
-                password=user_password,
-                is_manager=is_manager
-            )
+            try:
+                print(f"Triggering email task for new user: {user_email}")
+                task_result = send_user_credentials_email_task.delay(
+                    user_email=user_email,
+                    user_name=user_name,
+                    password=user_password,
+                    is_manager=is_manager
+                )
+                print(f"Email task queued successfully: {task_result.id}")
+            except Exception as e:
+                print(f"Failed to queue email task for {user_email}: {str(e)}")
+                # Fallback: try to send email synchronously
+                try:
+                    from hirethon_template.utils.email import send_user_credentials_email
+                    print(f"Attempting synchronous email sending for {user_email}")
+                    send_user_credentials_email(
+                        user_email=user_email,
+                        user_name=user_name,
+                        password=user_password,
+                        is_manager=is_manager
+                    )
+                    print(f"Synchronous email sent successfully to {user_email}")
+                except Exception as sync_e:
+                    print(f"Synchronous email also failed for {user_email}: {str(sync_e)}")
+                # Don't fail the user creation if email task fails
             
             # Serialize the response data
             response_serializer = UserResponseSerializer(user)
@@ -772,7 +791,7 @@ def get_users_management_view(request):
     # Ensure page_size is within reasonable limits
     page_size = min(max(page_size, 1), 50)  # Between 1 and 50
     
-    users_queryset = User.objects.all().order_by('-date_joined')
+    users_queryset = User.objects.filter(is_superuser=False).order_by('-date_joined')
     paginator = Paginator(users_queryset, page_size)
     
     try:

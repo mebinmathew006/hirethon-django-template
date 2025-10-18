@@ -90,6 +90,7 @@ LOCAL_APPS = [
     "hirethon_template.users",
     "hirethon_template.managers",
     'hirethon_template.auth_app',
+    'hirethon_template.members',
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

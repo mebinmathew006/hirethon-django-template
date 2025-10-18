@@ -7,6 +7,7 @@ import AdminAddTeam from "../pages/admin/AdminAddTeam";
 import AdminAddTeamMember from "../pages/admin/AdminAddTeamMember";
 import AdminViewTeam from "../pages/admin/AdminViewTeam";
 import AdminManageUser from "../pages/admin/AdminManageUser";
+import UserHomePage from "../pages/user/UserHomePage";
 import NotFound from "../components/NotFound";
 
 
@@ -21,8 +22,7 @@ const AppRoutes = () => {
       <Route path="/view-teams" element={<AdminViewTeam/>} />
       <Route path="/add-team-member" element={<AdminAddTeamMember/>} />
       <Route path="/add-team-member/:teamId" element={<AdminAddTeamMember/>} />
-      {/* Add UserHomePage route when it's created */}
-      <Route path="/user_home_page" element={<div className="min-h-screen flex items-center justify-center bg-gray-900 text-white"><h1 className="text-4xl">User Home Page - Coming Soon</h1></div>} />
+      <Route path="/user_home_page" element={<UserHomePage/>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

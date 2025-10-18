@@ -4,7 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -120,3 +120,39 @@ class TokenRefreshFromCookieView(APIView):
                 {"detail": f"Invalid or expired refresh token.{e}"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """
+    API view for user logout with token blacklisting
+    """
+    try:
+        # Get refresh token from cookies
+        refresh_token = request.COOKIES.get('refresh_token')
+        
+        if refresh_token:
+            try:
+                # Create RefreshToken instance and blacklist it
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                # Token might already be invalid, but we still want to logout successfully
+                pass
+        
+        # Clear the refresh token cookie
+        response = Response(
+            {'message': 'Successfully logged out.'},
+            status=status.HTTP_200_OK
+        )
+        response.delete_cookie('refresh_token')
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}")
+        return Response(
+            {'error': 'An error occurred during logout.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
