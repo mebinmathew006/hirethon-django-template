@@ -61,7 +61,7 @@ axiosInstance.interceptors.response.use(
         // Refresh token request
         console.log("Attempting to refresh token...");
         const refreshResponse = await publicAxiosInstance.post(
-          '/api/auth/refresh_token',
+          '/api/auth/refresh_token/',
           {}
         );
 
@@ -103,7 +103,7 @@ axiosInstance.interceptors.response.use(
         });
 
         // Redirect to login
-        history.push("/login");
+        history.push("/");
         return Promise.reject(refreshError);
       }
     }

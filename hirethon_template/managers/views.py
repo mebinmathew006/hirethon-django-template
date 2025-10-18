@@ -4,12 +4,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 
-from .models import Team
+from .models import Team, TeamMember
 from .serializers import (
     CreateUserSerializer, UserResponseSerializer, 
     CreateTeamSerializer, TeamResponseSerializer,
     CreateTeamMemberSerializer, TeamMemberResponseSerializer,
-    TeamListSerializer, UserListSerializer
+    TeamListSerializer, TeamManagementSerializer, UserListSerializer
 )
 from .tasks import send_user_credentials_email_task
 
@@ -184,21 +184,20 @@ def get_users_list_view(request):
     """
     API view to get list of users (non-managers) for dropdowns (only accessible by authenticated managers/admins)
     """
-    # Debug logging
-    print(f"User authenticated: {request.user.is_authenticated}")
-    print(f"User ID: {request.user.id if hasattr(request.user, 'id') else 'No ID'}")
-    print(f"User email: {getattr(request.user, 'email', 'No email')}")
-    print(f"User is_superuser: {getattr(request.user, 'is_superuser', 'No is_superuser')}")
-    print(f"User is_manager: {getattr(request.user, 'is_manager', 'No is_manager')}")
-    
     if not (request.user.is_superuser or request.user.is_manager):
         return Response(
             {'error': {'commonError': 'You do not have permission to view users.'}},
             status=status.HTTP_403_FORBIDDEN
         )
     
-    # Get only active users who are not managers
-    users = User.objects.filter(is_active=True, is_manager=False).order_by('name')
+    # Get only active users who are not managers and not already in any team
+    users_in_teams = TeamMember.objects.values_list('user_id', flat=True)
+    users = User.objects.filter(
+        is_active=True, 
+        is_manager=False
+    ).exclude(
+        id__in=users_in_teams
+    ).order_by('name')
     serializer = UserListSerializer(users, many=True)
     
     return Response({
@@ -221,6 +220,138 @@ def create_team_member_view(request):
     
     # Use serializer for validation and creation
     serializer = CreateTeamMemberSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        try:
+            # Create the team member using the serializer
+            team_member = serializer.save()
+            
+            # Serialize the response data
+            response_serializer = TeamMemberResponseSerializer(team_member)
+            
+            return Response({
+                'message': 'User added to team successfully.',
+                'team_member': response_serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': {'commonError': 'An unexpected error occurred while adding the team member.'}},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    else:
+        # Return validation errors in the expected format for frontend
+        errors = {}
+        common_errors = []
+        
+        for field, field_errors in serializer.errors.items():
+            if isinstance(field_errors, list):
+                error_message = field_errors[0] if field_errors else ''
+                if field in ['user', 'team', 'is_manager']:
+                    errors[field] = error_message
+                else:
+                    common_errors.append(error_message)
+            else:
+                error_message = str(field_errors)
+                if field in ['user', 'team', 'is_manager']:
+                    errors[field] = error_message
+                else:
+                    common_errors.append(error_message)
+        
+        # Check for common error in validate method
+        if 'commonError' in serializer.errors:
+            common_errors.append(serializer.errors['commonError'])
+        
+        # Add common errors if any
+        if common_errors:
+            errors['commonError'] = common_errors[0] if len(common_errors) == 1 else '; '.join(common_errors)
+        
+        return Response(
+            {'error': errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_teams_management_view(request):
+    """
+    API view to get all teams with management info (member counts, status)
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to view teams.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    teams = Team.objects.all().order_by('-created_at')
+    serializer = TeamManagementSerializer(teams, many=True)
+    
+    return Response({
+        'teams': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_team_status_view(request, team_id):
+    """
+    API view to toggle team active status
+    """
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to modify teams.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        team = Team.objects.get(id=team_id)
+    except Team.DoesNotExist:
+        return Response(
+            {'error': {'commonError': 'Team not found.'}},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Toggle the is_active status
+    team.is_active = not team.is_active
+    team.save()
+    
+    serializer = TeamManagementSerializer(team)
+    
+    return Response({
+        'message': f'Team {"activated" if team.is_active else "deactivated"} successfully.',
+        'team': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_team_member_for_team_view(request, team_id):
+    """
+    API view to add a user as a team member for a specific team (only accessible by authenticated managers/admins)
+    """
+    # Check if the requesting user has permission to assign team members
+    if not (request.user.is_superuser or request.user.is_manager):
+        return Response(
+            {'error': {'commonError': 'You do not have permission to assign team members.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Verify team exists
+    try:
+        team = Team.objects.get(id=team_id)
+    except Team.DoesNotExist:
+        return Response(
+            {'error': {'commonError': 'Team not found.'}},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Add team_id to request data
+    data = request.data.copy()
+    data['team'] = team_id
+    
+    # Use serializer for validation and creation
+    serializer = CreateTeamMemberSerializer(data=data)
     
     if serializer.is_valid():
         try:

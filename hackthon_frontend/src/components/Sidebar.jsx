@@ -55,11 +55,11 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           </button>
 
           <button 
-            onClick={() => navigate("/add-team-member")}  
+            onClick={() => navigate("/view-teams")}  
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/10 transition-all"
           >
             <UserCheck className="w-5 h-5" />
-            {isSidebarOpen && <span className="font-medium">Add Team Member</span>}
+            {isSidebarOpen && <span className="font-medium">Manage Teams</span>}
           </button>
 
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/10 transition-all">

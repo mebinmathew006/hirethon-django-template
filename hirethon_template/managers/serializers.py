@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from datetime import timedelta
+from datetime import timedelta, datetime, date, time
+from django.utils import timezone
 
-from .models import Team, TeamMember
+from .models import Team, TeamMember, Availability
 
 User = get_user_model()
 
@@ -282,24 +283,56 @@ class CreateTeamMemberSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """
-        Validate that the user is not already a member of this team
+        Validate that the user is not already a member of any team
         """
         user = attrs.get('user')
         team = attrs.get('team')
         
         if user and team:
+            # Check if user is already in this specific team
             if TeamMember.objects.filter(user=user, team=team).exists():
                 raise serializers.ValidationError({
                     'commonError': 'This user is already a member of this team.'
+                })
+            
+            # Check if user is already in any other team (one user = one team rule)
+            existing_membership = TeamMember.objects.filter(user=user).exclude(team=team).first()
+            if existing_membership:
+                raise serializers.ValidationError({
+                    'commonError': f'This user is already a member of team "{existing_membership.team.name}". A user can only be in one team at a time.'
                 })
         
         return attrs
 
     def create(self, validated_data):
         """
-        Create and return a new team member instance
+        Create and return a new team member instance and set up availability for the entire week
         """
+        user = validated_data.get('user')
+        
+        # Create the team member
         team_member = TeamMember.objects.create(**validated_data)
+        
+        # Set up availability for the entire week (starting from today)
+        today = timezone.now().date()
+        start_of_week = today - timedelta(days=today.weekday())  # Monday
+        
+        # Create availability slots for each day of the week (7 days)
+        for day_offset in range(7):
+            current_day = start_of_week + timedelta(days=day_offset)
+            
+            # Set availability for the entire day (00:00 to 23:59)
+            start_datetime = timezone.make_aware(datetime.combine(current_day, time.min))
+            end_datetime = timezone.make_aware(datetime.combine(current_day, time.max))
+            
+            # Create availability record (is_hard_block=False means available)
+            Availability.objects.create(
+                user=user,
+                start_time=start_datetime,
+                end_time=end_datetime,
+                is_hard_block=False  # False means available/not blocked
+            )
+        
         return team_member
 
 
@@ -339,6 +372,34 @@ class TeamListSerializer(serializers.ModelSerializer):
             'name',
         ]
         read_only_fields = fields
+
+
+class TeamManagementSerializer(serializers.ModelSerializer):
+    """
+    Serializer for team management view with member count and status
+    """
+    member_count = serializers.SerializerMethodField()
+    active_member_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Team
+        fields = [
+            'id',
+            'name',
+            'created_at',
+            'is_active',
+            'member_count',
+            'active_member_count',
+        ]
+        read_only_fields = ['id', 'created_at', 'member_count', 'active_member_count']
+    
+    def get_member_count(self, obj):
+        """Get total number of members in this team"""
+        return obj.members.count()
+    
+    def get_active_member_count(self, obj):
+        """Get number of active members in this team"""
+        return obj.members.filter(is_active=True).count()
 
 
 class UserListSerializer(serializers.ModelSerializer):

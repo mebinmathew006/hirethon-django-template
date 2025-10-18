@@ -32,6 +32,21 @@ export const createTeamMemberRoute = async (teamMemberData) => {
     return response;
 }
 
+export const getTeamsManagementRoute = async () => {
+    const response = await axiosInstance.get('/api/managers/teams-management/');
+    return response;
+}
+
+export const toggleTeamStatusRoute = async (teamId) => {
+    const response = await axiosInstance.patch(`/api/managers/toggle-team-status/${teamId}/`);
+    return response;
+}
+
+export const createTeamMemberForTeamRoute = async (teamId, teamMemberData) => {
+    const response = await axiosInstance.post(`/api/managers/add-member-to-team/${teamId}/`, teamMemberData);
+    return response;
+}
+
 export const logoutRoute = async () => {
     const response = await axios.post('/api/logout/')
     return response.data
