@@ -56,12 +56,13 @@ def login_view(request):
         'name': user.name,
         'is_active': user.is_active,
         'is_manager': user.is_manager,
+        'access_token': str(access_token),
     }
     
     # Create response with user data and access token
     response = Response({
-        'user': user_data,
-        'access_token': str(access_token),
+        'user': user_data
+        
     }, status=status.HTTP_200_OK)
     
     refresh_token_max_age = 7 * 24 * 60 * 60  

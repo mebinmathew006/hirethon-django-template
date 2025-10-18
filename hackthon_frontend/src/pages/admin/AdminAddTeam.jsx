@@ -1,8 +1,13 @@
 import React, { useState } from "react";
 import { Users, Calendar, ArrowLeft, Clock, Zap, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { createTeamRoute } from "../../services/userService";
+import { toast } from "react-toastify";
+import Sidebar from "../../components/Sidebar";
 
 export default function AdminAddTeam() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const [formData, setFormData] = useState({
     name: "",
     slot_duration_hours: "1",
@@ -93,27 +98,74 @@ export default function AdminAddTeam() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     if (validateForm()) {
-      const hours = parseInt(formData.slot_duration_hours) || 0;
-      const minutes = parseInt(formData.slot_duration_minutes) || 0;
-      const totalSeconds = (hours * 3600) + (minutes * 60);
+      try {
+        const hours = parseInt(formData.slot_duration_hours) || 0;
+        const minutes = parseInt(formData.slot_duration_minutes) || 0;
+        const totalSeconds = (hours * 3600) + (minutes * 60);
 
-      const teamData = {
-        name: formData.name.trim(),
-        slot_duration: totalSeconds,
-      };
+        const teamData = {
+          name: formData.name.trim(),
+          slot_duration: totalSeconds,
+        };
 
-      setTimeout(() => {
-        console.log("Team created:", teamData);
-        setIsSubmitting(false);
-      }, 2000);
-    } else {
-      setIsSubmitting(false);
+        const response = await createTeamRoute(teamData);
+        
+        if (response.status === 201) {
+          toast.success("Team created successfully!", {
+            position: "bottom-center",
+          });
+          
+          // Reset form
+          setFormData({
+            name: "",
+            slot_duration_hours: "1",
+            slot_duration_minutes: "0",
+          });
+          setErrors({});
+          setTouched({});
+          
+          // Navigate back to dashboard after a short delay
+          setTimeout(() => {
+            navigate("/admin_home_page");
+          }, 1500);
+        }
+      } catch (error) {
+        console.error("Error creating team:", error);
+        
+        if (error.response && error.response.data && error.response.data.error) {
+          const backendErrors = {};
+          
+          if (error.response.data.error.name) {
+            backendErrors.name = Array.isArray(error.response.data.error.name) 
+              ? error.response.data.error.name[0] 
+              : error.response.data.error.name;
+          }
+          if (error.response.data.error.slot_duration) {
+            backendErrors.slot_duration = Array.isArray(error.response.data.error.slot_duration)
+              ? error.response.data.error.slot_duration[0]
+              : error.response.data.error.slot_duration;
+          }
+          if (error.response.data.error.commonError) {
+            toast.error(error.response.data.error.commonError, {
+              position: "bottom-center",
+            });
+          }
+          
+          setErrors({ ...errors, ...backendErrors });
+        } else {
+          toast.error("Failed to create team. Please try again.", {
+            position: "bottom-center",
+          });
+        }
+      }
     }
+    
+    setIsSubmitting(false);
   };
 
   const presetDurations = [
@@ -133,14 +185,14 @@ export default function AdminAddTeam() {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-y-auto">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
-      <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
+    <div className="min-h-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
+    <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '700ms'}}></div>
+    <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1000ms'}}></div>
 
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
-
-      <div className="relative z-10 min-h-screen py-12 px-4">
+    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
+<Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+<div className="flex-1 relative z-10 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           <button onClick={()=>navigate(-1)} className="flex items-center gap-2 text-purple-300 hover:text-purple-200 transition-colors mb-8 group">
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />

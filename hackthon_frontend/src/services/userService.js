@@ -12,6 +12,11 @@ export const createUserRoute = async (userData) => {
     return response;
 }
 
+export const createTeamRoute = async (teamData) => {
+    const response = await axiosInstance.post('/api/managers/create-team/', teamData);
+    return response;
+}
+
 export const logoutRoute = async () => {
     const response = await axios.post('/api/logout/')
     return response.data
