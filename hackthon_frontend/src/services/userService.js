@@ -17,6 +17,21 @@ export const createTeamRoute = async (teamData) => {
     return response;
 }
 
+export const getTeamsListRoute = async () => {
+    const response = await axiosInstance.get('/api/managers/teams-list/');
+    return response;
+}
+
+export const getUsersListRoute = async () => {
+    const response = await axiosInstance.get('/api/managers/users-list/');
+    return response;
+}
+
+export const createTeamMemberRoute = async (teamMemberData) => {
+    const response = await axiosInstance.post('/api/managers/create-team-member/', teamMemberData);
+    return response;
+}
+
 export const logoutRoute = async () => {
     const response = await axios.post('/api/logout/')
     return response.data
