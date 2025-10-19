@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth import get_user_model
 
-from .models import Team, TeamMember, Slot, Availability, Holiday
+from .models import Team, TeamMember, Slot, Availability, Holiday, LeaveRequest
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -247,7 +247,7 @@ class SlotScheduler:
             score = 0
             
             # Check availability (penalty for unavailable)
-            if not self._is_user_available(user, slot_date):
+            if not self._is_user_available(user, slot_date, slot.team):
                 continue  # Skip unavailable users
             
             # Check daily hours constraint (including this slot if assigned) - using team constraints
@@ -289,13 +289,41 @@ class SlotScheduler:
         member_scores.sort(key=lambda x: x[1])
         return member_scores[0][0]
     
-    def _is_user_available(self, user: User, check_date: date) -> bool:
-        """Check if user is available on a given date"""
+    def _is_user_available(self, user: User, check_date: date, team: Team = None) -> bool:
+        """
+        Check if user is available on a given date
+        Considers both Availability model and approved LeaveRequest
+        """
+        # First check for explicit availability record
         try:
             availability = Availability.objects.get(user=user, date=check_date)
-            return availability.is_available
+            if not availability.is_available:
+                return False
         except Availability.DoesNotExist:
-            return True  # Available by default
+            pass  # No explicit availability record, check leave requests
+        
+        # Check for approved leave requests
+        if team:
+            # If team is specified, check leave requests for that team
+            leave_request = LeaveRequest.objects.filter(
+                user=user,
+                team=team,
+                date=check_date,
+                status='approved'
+            ).first()
+            if leave_request:
+                return False
+        else:
+            # If no team specified, check all approved leave requests for this user on this date
+            leave_requests = LeaveRequest.objects.filter(
+                user=user,
+                date=check_date,
+                status='approved'
+            ).exists()
+            if leave_requests:
+                return False
+        
+        return True  # Available by default if no restrictions found
     
     def _get_user_daily_hours(self, user: User, check_date: date) -> float:
         """Get total assigned hours for user on a specific date"""
@@ -411,8 +439,8 @@ class SlotScheduler:
         slot_hours = slot.duration.total_seconds() / 3600
         
         # Availability check
-        if not self._is_user_available(user, slot_date):
-            return "User is not available on this date"
+        if not self._is_user_available(user, slot_date, slot.team):
+            return "User is not available on this date (due to leave or unavailability)"
         
         # Daily hours check - using team constraints
         daily_hours = self._get_user_daily_hours(user, slot_date)
@@ -484,4 +512,272 @@ class SlotScheduler:
             
         except Exception as e:
             self.logger.error(f"Error revalidating assignments: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def _ensure_slots_exist_for_period(self, team: Team, start_date: date, end_date: date) -> Dict:
+        """
+        Ensure slots exist for a team in the given period (create missing ones without assignment)
+        """
+        try:
+            # Convert duration to hours for calculations
+            slot_duration_hours = team.slot_duration.total_seconds() / 3600
+            slots_created = 0
+            
+            # Create slots for each day in the period if they don't exist
+            current_date = start_date
+            
+            while current_date <= end_date:
+                # Skip if it's a team holiday
+                if Holiday.objects.filter(team=team, date=current_date).exists():
+                    current_date += timedelta(days=1)
+                    continue
+                
+                # Calculate number of slots needed for this day (24 hours)
+                slots_per_day = int(24 / slot_duration_hours)
+                
+                for slot_number in range(slots_per_day):
+                    start_time = timezone.make_aware(datetime.combine(
+                        current_date, 
+                        time(hour=int(slot_number * slot_duration_hours))
+                    ))
+                    end_time = start_time + team.slot_duration
+                    
+                    # Only create if slot doesn't exist
+                    if not Slot.objects.filter(team=team, start_time=start_time).exists():
+                        Slot.objects.create(
+                            team=team,
+                            start_time=start_time,
+                            end_time=end_time,
+                            is_holiday=False,
+                            is_covered=False
+                        )
+                        slots_created += 1
+                
+                current_date += timedelta(days=1)
+            
+            return {
+                "success": True,
+                "slots_created": slots_created
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error ensuring slots exist for team {team.id}: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def reassign_team_slots(self, team: Team, start_date: date, end_date: date) -> Dict:
+        """
+        Reassign slots for a team from a specific date range
+        Used when new members are added to ensure fair rotation
+        First ensures all slots exist for the period, then reassigns them
+        """
+        try:
+            # First, ensure slots exist for the date range (create missing ones without assignment)
+            creation_result = self._ensure_slots_exist_for_period(team, start_date, end_date)
+            slots_created = creation_result.get('slots_created', 0)
+            
+            # Get all slots in the date range for this team (including newly created ones)
+            slots_to_reassign = Slot.objects.filter(
+                team=team,
+                start_time__date__gte=start_date,
+                start_time__date__lte=end_date
+            )
+            
+            if not slots_to_reassign.exists():
+                return {
+                    "success": True, 
+                    "slots_reassigned": 0,
+                    "slots_created": slots_created,
+                    "message": "No slots found for the specified period after creation attempt"
+                }
+            
+            # Unassign all slots in the range to ensure fair redistribution
+            slots_reassigned = 0
+            with transaction.atomic():
+                for slot in slots_to_reassign:
+                    if slot.assigned_member:
+                        slot.assigned_member = None
+                        slot.is_covered = False
+                        slot.save()
+                        slots_reassigned += 1
+                
+                # Now reassign all slots fairly using the existing logic
+                assignment_result = self._assign_slots_fairly(team, start_date, end_date)
+                
+                if assignment_result.get('success', False):
+                    self.logger.info(f"Successfully reassigned slots for team {team.name} from {start_date} to {end_date}")
+                    return {
+                        "success": True,
+                        "slots_reassigned": slots_reassigned,
+                        "slots_created": slots_created,
+                        "new_assignments": assignment_result.get('assignments_made', 0),
+                        "assignment_result": assignment_result
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": f"Failed to reassign slots: {assignment_result.get('error', 'Unknown error')}"
+                    }
+                    
+        except Exception as e:
+            self.logger.error(f"Error reassigning team slots: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def recalculate_slots_for_new_member(self, team: Team, start_date: date = None, end_date: date = None) -> Dict:
+        """
+        Comprehensive slot recalculation when a new member joins a team
+        This method:
+        1. Ensures all slots exist for the specified period
+        2. Considers all members' leave requests and availability
+        3. Reassigns slots fairly with the new member included
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        try:
+            # Default to next 7 days if no dates provided
+            if not start_date:
+                start_date = timezone.now().date() + timedelta(days=1)  # Start from tomorrow
+            
+            if not end_date:
+                end_date = start_date + timedelta(days=6)  # 7 days total
+            
+            self.logger.info(f"🔄 Recalculating slots for team '{team.name}' from {start_date} to {end_date} due to new member addition")
+            
+            # Step 1: Get current active members (including the new one)
+            active_members = TeamMember.objects.filter(
+                team=team,
+                is_active=True,
+                user__is_active=True
+            ).select_related('user')
+            
+            if not active_members.exists():
+                return {
+                    "success": False,
+                    "error": "No active members found in team"
+                }
+            
+            member_count = active_members.count()
+            member_names = [member.user.name for member in active_members]
+            self.logger.info(f"📋 Active members ({member_count}): {', '.join(member_names)}")
+            
+            # Step 2: Check for approved leave requests in the period
+            leave_summary = {}
+            for member in active_members:
+                user = member.user
+                leave_dates = LeaveRequest.objects.filter(
+                    user=user,
+                    team=team,
+                    date__gte=start_date,
+                    date__lte=end_date,
+                    status='approved'
+                ).values_list('date', flat=True)
+                
+                if leave_dates:
+                    leave_summary[user.name] = list(leave_dates)
+            
+            if leave_summary:
+                self.logger.info(f"🏖️ Approved leave requests in period: {leave_summary}")
+            
+            # Step 3: Ensure all slots exist for the period
+            creation_result = self._ensure_slots_exist_for_period(team, start_date, end_date)
+            slots_created = creation_result.get('slots_created', 0)
+            
+            if not creation_result.get('success', False):
+                return {
+                    "success": False,
+                    "error": f"Failed to create slots: {creation_result.get('error', 'Unknown error')}"
+                }
+            
+            # Step 4: Get all slots in the period
+            all_slots = Slot.objects.filter(
+                team=team,
+                start_time__date__gte=start_date,
+                start_time__date__lte=end_date
+            ).order_by('start_time')
+            
+            total_slots = all_slots.count()
+            self.logger.info(f"📅 Total slots in period: {total_slots} (created {slots_created} new)")
+            
+            if total_slots == 0:
+                return {
+                    "success": True,
+                    "slots_created": slots_created,
+                    "slots_reassigned": 0,
+                    "new_assignments": 0,
+                    "message": "No slots found for the specified period"
+                }
+            
+            # Step 5: Unassign all existing slots to start fresh
+            slots_reassigned = 0
+            with transaction.atomic():
+                for slot in all_slots:
+                    if slot.assigned_member:
+                        slot.assigned_member = None
+                        slot.is_covered = False
+                        slot.save()
+                        slots_reassigned += 1
+                
+                # Step 6: Reassign all slots fairly with comprehensive constraint checking
+                assignment_result = self._assign_slots_fairly_with_leave_check(team, start_date, end_date)
+                
+                if assignment_result.get('success', False):
+                    new_assignments = assignment_result.get('assignments_made', 0)
+                    violations = assignment_result.get('violations', [])
+                    
+                    self.logger.info(f"✅ Successfully assigned {new_assignments} slots out of {total_slots} total slots")
+                    
+                    if violations:
+                        self.logger.warning(f"⚠️ {len(violations)} constraint violations encountered:")
+                        for violation in violations[:5]:  # Log first 5 violations
+                            self.logger.warning(f"  - Slot {violation.get('slot_id', 'unknown')}: {violation.get('violation', 'unknown reason')}")
+                    
+                    return {
+                        "success": True,
+                        "slots_created": slots_created,
+                        "slots_reassigned": slots_reassigned,
+                        "new_assignments": new_assignments,
+                        "total_slots": total_slots,
+                        "members_count": member_count,
+                        "leave_summary": leave_summary,
+                        "assignment_result": assignment_result,
+                        "message": f"Successfully recalculated slots for {member_count} members including new member"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": f"Failed to assign slots: {assignment_result.get('error', 'Unknown error')}"
+                    }
+                    
+        except Exception as e:
+            self.logger.error(f"Error recalculating slots for new member in team {team.id}: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def _assign_slots_fairly_with_leave_check(self, team: Team, start_date: date, end_date: date) -> Dict:
+        """
+        Enhanced slot assignment that ensures leave requests are properly considered
+        This is a wrapper around _assign_slots_fairly with additional logging for leave tracking
+        """
+        try:
+            # Log current leave status for the team
+            self.logger.info(f"🔍 Checking leave requests for team '{team.name}' from {start_date} to {end_date}")
+            
+            # Use the existing fair assignment logic which already considers leave requests
+            result = self._assign_slots_fairly(team, start_date, end_date)
+            
+            if result.get('success', False):
+                violations = result.get('violations', [])
+                assignments_made = result.get('assignments_made', 0)
+                
+                # Count how many violations were due to unavailable users
+                leave_violations = [v for v in violations if 'not available' in v.get('violation', '').lower()]
+                
+                if leave_violations:
+                    self.logger.info(f"📋 {len(leave_violations)} slots could not be assigned due to user unavailability/leave")
+                
+                self.logger.info(f"✅ Fair assignment completed: {assignments_made} assignments made")
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error in enhanced slot assignment: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}

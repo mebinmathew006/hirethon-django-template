@@ -249,7 +249,11 @@ def check_empty_slots_notification_function():
             
             # Send WebSocket notifications for new alerts
             if new_alerts:
-                send_websocket_notifications.delay([alert.id for alert in new_alerts])
+                alert_ids = [alert.id for alert in new_alerts]
+                logger.info(f"Triggering WebSocket notification task for {len(alert_ids)} alerts: {alert_ids}")
+                send_websocket_notifications.delay(alert_ids)
+            else:
+                logger.info("No new alerts created, skipping WebSocket notifications")
             
             return {
                 "success": True,
@@ -292,11 +296,22 @@ def send_websocket_notifications(alert_ids):
         from asgiref.sync import async_to_sync
         from .models import Alert
         
+        logger.info(f"WebSocket notification task started with alert_ids: {alert_ids}")
+        
         # Get the alerts
         alerts = Alert.objects.filter(id__in=alert_ids).select_related('slot', 'team')
         
+        logger.info(f"Found {alerts.count()} alerts to send WebSocket notifications for")
+        
+        if not alerts.exists():
+            logger.warning("No alerts found for the provided IDs")
+            return
+        
         channel_layer = get_channel_layer()
+        logger.info(f"Channel layer: {channel_layer}")
+        
         if channel_layer:
+            notifications_sent = 0
             for alert in alerts:
                 hours_from_now = round((alert.slot.start_time - timezone.now()).total_seconds() / 3600, 1)
                 
@@ -315,6 +330,8 @@ def send_websocket_notifications(alert_ids):
                     'assigned_user': None
                 }
                 
+                logger.info(f"Sending WebSocket notification for alert {alert.id}: {notification_data['team_name']} - {notification_data['message']}")
+                
                 async_to_sync(channel_layer.group_send)(
                     'admin_notifications',
                     {
@@ -323,8 +340,11 @@ def send_websocket_notifications(alert_ids):
                         'timestamp': alert.created_at.isoformat()
                     }
                 )
+                notifications_sent += 1
             
-            logger.info(f"Sent WebSocket notifications for {len(alerts)} new alerts")
+            logger.info(f"Sent {notifications_sent} WebSocket notifications for {len(alerts)} new alerts")
+        else:
+            logger.error("Channel layer is None - WebSocket notifications cannot be sent")
         
     except Exception as e:
         logger.error(f"Failed to send WebSocket notifications: {str(e)}", exc_info=True)

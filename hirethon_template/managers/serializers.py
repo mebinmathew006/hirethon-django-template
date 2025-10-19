@@ -218,6 +218,9 @@ class CreateTeamSerializer(serializers.ModelSerializer):
         slot_duration_seconds = validated_data.pop('slot_duration')
         validated_data['slot_duration'] = timedelta(seconds=slot_duration_seconds)
         
+        # New teams start as inactive until they have enough members
+        validated_data['is_active'] = False
+        
         team = Team.objects.create(**validated_data)
         return team
 
@@ -228,6 +231,8 @@ class TeamResponseSerializer(serializers.ModelSerializer):
     """
     slot_duration_seconds = serializers.SerializerMethodField()
     member_count = serializers.SerializerMethodField()
+    minimum_required_members = serializers.SerializerMethodField()
+    active_member_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Team
@@ -241,6 +246,9 @@ class TeamResponseSerializer(serializers.ModelSerializer):
             'min_rest_hours',
             'created_at',
             'member_count',
+            'active_member_count',
+            'minimum_required_members',
+            'is_active',
         ]
         read_only_fields = fields
 
@@ -251,6 +259,14 @@ class TeamResponseSerializer(serializers.ModelSerializer):
     def get_member_count(self, obj):
         """Get the number of members in this team"""
         return obj.members.count()
+    
+    def get_active_member_count(self, obj):
+        """Get the number of active members in this team"""
+        return obj.get_active_member_count()
+    
+    def get_minimum_required_members(self, obj):
+        """Get the minimum required members for this team"""
+        return obj.calculate_minimum_members()
 
 
 class CreateTeamMemberSerializer(serializers.ModelSerializer):
@@ -333,6 +349,13 @@ class CreateTeamMemberSerializer(serializers.ModelSerializer):
                 # Create the team member
                 team_member = TeamMember.objects.create(**validated_data)
                 logger.info(f"Successfully created team member {team_member.id} for user {user.id} in team {team.id}")
+            
+            # Update team active status based on member count
+            team_status_changed = team.update_active_status()
+            
+            # If team was already active and didn't just become active, reassign slots from tomorrow
+            if team.is_active and not team_status_changed:
+                team.reassign_slots_from_next_day()
             
             return team_member
             

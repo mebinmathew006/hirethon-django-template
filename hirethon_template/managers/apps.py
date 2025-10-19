@@ -7,6 +7,8 @@ class ManagersConfig(AppConfig):
 
     def ready(self):
         """Set up periodic tasks when the app is ready"""
+        # Import models to ensure signals are registered
+        from . import models  # This will import the signals defined in models.py
         try:
             from django_celery_beat.models import PeriodicTask, CrontabSchedule, IntervalSchedule
             from .tasks import create_slots_daily_task, check_empty_slots_notification_task
@@ -37,35 +39,35 @@ class ManagersConfig(AppConfig):
             if task_created:
                 print("Created daily slot creation periodic task")
             
-            # Create hourly empty slots check task (runs every hour)
-            hourly_schedule, created = IntervalSchedule.objects.get_or_create(
+            # Create minute-based empty slots check task (runs every minute)
+            minute_schedule, created = IntervalSchedule.objects.get_or_create(
                 every=1,
-                period=IntervalSchedule.HOURS,
+                period=IntervalSchedule.MINUTES,
             )
             
             if created:
-                print("Created interval schedule for hourly empty slots check")
+                print("Created interval schedule for minute-based empty slots check")
             
             # Create or update the notification task
             notification_task, notif_created = PeriodicTask.objects.get_or_create(
                 name='Empty Slots Notification Check',
                 defaults={
-                    'interval': hourly_schedule,
+                    'interval': minute_schedule,
                     'task': 'hirethon_template.managers.tasks.check_empty_slots_notification_task',
                     'enabled': True,
-                    'description': 'Task to check for empty slots in next 72 hours and create notifications (every hour)',
+                    'description': 'Task to check for empty slots in next 72 hours and create notifications (every minute)',
                 }
             )
             
             # Update existing task to use new schedule
-            if not notif_created and notification_task.interval != hourly_schedule:
-                notification_task.interval = hourly_schedule
-                notification_task.description = 'Task to check for empty slots in next 72 hours and create notifications (every hour)'
+            if not notif_created and notification_task.interval != minute_schedule:
+                notification_task.interval = minute_schedule
+                notification_task.description = 'Task to check for empty slots in next 72 hours and create notifications (every minute)'
                 notification_task.save()
-                print("Updated existing notification task to run every hour")
+                print("Updated existing notification task to run every minute")
             
             if notif_created:
-                print("Created hourly notification periodic task")
+                print("Created minute-based notification periodic task")
             
         except Exception as e:
             # Don't let app startup fail if celery beat tables don't exist yet

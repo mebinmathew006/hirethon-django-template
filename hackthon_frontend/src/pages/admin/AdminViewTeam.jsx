@@ -272,6 +272,7 @@ export default function AdminViewTeam() {
                             <th className="px-6 py-4 text-center text-sm font-semibold text-white">Active Members</th>
                             <th className="px-6 py-4 text-center text-sm font-semibold text-white">Status</th>
                             <th className="px-6 py-4 text-center text-sm font-semibold text-white">Actions</th>
+                            <th className="px-6 py-4 text-center text-sm font-semibold text-white">Status</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -340,7 +341,11 @@ export default function AdminViewTeam() {
                                     <UserPlus className="w-4 h-4" />
                                     Add
                                   </button>
-                                  <button
+                                  
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                              <button
                                     onClick={() => handleToggleTeamStatus(team.id, team.is_active)}
                                     className={`flex items-center gap-1 py-2 px-4 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
                                       team.is_active
@@ -351,7 +356,6 @@ export default function AdminViewTeam() {
                                     {team.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     {team.is_active ? 'Block' : 'Unblock'}
                                   </button>
-                                </div>
                               </td>
                             </tr>
                           ))}
