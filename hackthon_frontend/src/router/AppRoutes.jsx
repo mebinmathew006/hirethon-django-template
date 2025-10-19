@@ -12,6 +12,7 @@ import AdminNotifications from "../pages/admin/AdminNotifications";
 import AdminViewLeave from "../pages/admin/AdminViewLeave";
 import UserHomePage from "../pages/user/UserHomePage";
 import UserViewSchedule from "../pages/user/UserViewSchedule";
+import UserViewTeams from "../pages/user/UserViewTeams";
 import SwapRequests from "../pages/user/SwapRequests";
 import NotFound from "../components/NotFound";
 
@@ -32,6 +33,7 @@ const AppRoutes = () => {
       <Route path="/admin/leave-requests" element={<AdminViewLeave/>} />
       <Route path="/user/home" element={<UserHomePage/>} />
       <Route path="/user/schedule" element={<UserViewSchedule/>} />
+      <Route path="/user/teams" element={<UserViewTeams/>} />
       <Route path="/user/swap-requests" element={<SwapRequests/>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

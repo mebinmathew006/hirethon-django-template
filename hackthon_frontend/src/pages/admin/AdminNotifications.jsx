@@ -49,11 +49,26 @@ export default function AdminNotifications() {
         }
         
         // Use WebSocket for real-time notifications
-        // In development, this might be ws://, in production it should be wss://
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//${window.location.host}/ws/notifications/?token=${token}`;
+        // Get the backend URL from the same environment variable used by axios
+        const baseurl = import.meta.env.VITE_BASE_URL;
+        
+        if (!baseurl) {
+          console.error('VITE_BASE_URL is not defined');
+          return;
+        }
+        
+        let wsUrl;
+        try {
+          const backendUrl = new URL(baseurl);
+          const wsProtocol = backendUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+          wsUrl = `${wsProtocol}//${backendUrl.host}/ws/notifications/?token=${token}`;
+        } catch (error) {
+          console.error('Error parsing backend URL:', error, 'baseurl:', baseurl);
+          return;
+        }
         
         console.log(`Connecting to WebSocket with token from ${tokenSource}:`, token.substring(0, 20) + '...');
+        console.log('Backend base URL:', baseurl);
         console.log('WebSocket URL:', wsUrl);
         ws = new WebSocket(wsUrl);
         

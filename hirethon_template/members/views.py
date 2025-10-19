@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.core.paginator import Paginator
 from datetime import datetime, date
 
 from .serializers import UserDashboardSerializer
@@ -509,3 +510,216 @@ def respond_to_swap_request_view(request, swap_request_id):
             {'error': {'commonError': 'An error occurred while processing the swap request.'}},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_teams_oncall_view(request):
+    """
+    API view to get user's teams with current on-call person for each team
+    """
+    if not request.user.is_active:
+        return Response(
+            {'error': {'commonError': 'Your account has been deactivated. Please contact an administrator.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get user's teams
+    user_teams = Team.objects.filter(
+        members__user=request.user, 
+        members__is_active=True,
+        is_active=True
+    ).distinct()
+    
+    if not user_teams.exists():
+        return Response({
+            'teams': [],
+            'message': 'You are not a member of any active teams.'
+        }, status=status.HTTP_200_OK)
+    
+    from django.utils import timezone
+    
+    teams_data = []
+    current_time = timezone.now()
+    
+    for team in user_teams:
+        # Find current on-call person for this team
+        current_slot = Slot.objects.filter(
+            team=team,
+            start_time__lte=current_time,
+            end_time__gte=current_time,
+            assigned_member__isnull=False
+        ).select_related('assigned_member').first()
+        
+        # Get next upcoming slots for this team (next 3 slots)
+        upcoming_slots = Slot.objects.filter(
+            team=team,
+            start_time__gt=current_time,
+            assigned_member__isnull=False
+        ).select_related('assigned_member').order_by('start_time')[:3]
+        
+        # Get team member count
+        member_count = team.members.filter(is_active=True).count()
+        
+        team_data = {
+            'id': team.id,
+            'name': team.name,
+            'member_count': member_count,
+            'current_oncall': {
+                'user_id': current_slot.assigned_member.id,
+                'name': current_slot.assigned_member.name,
+                'email': current_slot.assigned_member.email,
+                'start_time': current_slot.start_time.isoformat(),
+                'end_time': current_slot.end_time.isoformat()
+            } if current_slot else None,
+            'upcoming_slots': [
+                {
+                    'user_id': slot.assigned_member.id,
+                    'name': slot.assigned_member.name,
+                    'email': slot.assigned_member.email,
+                    'start_time': slot.start_time.isoformat(),
+                    'end_time': slot.end_time.isoformat(),
+                    'date': slot.date.isoformat()
+                }
+                for slot in upcoming_slots
+            ],
+            'team_schedule_constraints': {
+                'max_hours_per_day': team.max_hours_per_day,
+                'max_hours_per_week': team.max_hours_per_week,
+                'min_rest_hours': team.min_rest_hours
+            }
+        }
+        
+        teams_data.append(team_data)
+    
+    return Response({
+        'teams': teams_data,
+        'current_time': current_time.isoformat(),
+        'user_id': request.user.id
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_all_teams_oncall_view(request):
+    """
+    API view to get ALL teams with current on-call person for each team (not just user's teams)
+    """
+    if not request.user.is_active:
+        return Response(
+            {'error': {'commonError': 'Your account has been deactivated. Please contact an administrator.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get pagination parameters from query string
+    page = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', 10)
+    
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 10
+    
+    # Ensure page_size is within reasonable limits
+    page_size = min(max(page_size, 1), 50)  # Between 1 and 50
+    
+    # Get ALL active teams (not just user's teams)
+    teams_queryset = Team.objects.filter(is_active=True).order_by('name')
+    
+    if not teams_queryset.exists():
+        return Response({
+            'teams': [],
+            'message': 'No active teams found.',
+            'pagination': {
+                'current_page': 1,
+                'total_pages': 0,
+                'total_count': 0,
+                'page_size': page_size,
+                'has_next': False,
+                'has_previous': False,
+            }
+        }, status=status.HTTP_200_OK)
+    
+    # Apply pagination
+    paginator = Paginator(teams_queryset, page_size)
+    
+    try:
+        teams_page = paginator.page(page)
+    except:
+        # If page is out of range, return the last page
+        teams_page = paginator.page(paginator.num_pages)
+    
+    from django.utils import timezone
+    
+    teams_data = []
+    current_time = timezone.now()
+    
+    for team in teams_page:
+        # Find current on-call person for this team
+        current_slot = Slot.objects.filter(
+            team=team,
+            start_time__lte=current_time,
+            end_time__gte=current_time,
+            assigned_member__isnull=False
+        ).select_related('assigned_member').first()
+        
+        # Get next upcoming slots for this team (next 3 slots)
+        upcoming_slots = Slot.objects.filter(
+            team=team,
+            start_time__gt=current_time,
+            assigned_member__isnull=False
+        ).select_related('assigned_member').order_by('start_time')[:3]
+        
+        # Get team member count
+        member_count = team.members.filter(is_active=True).count()
+        
+        # Check if current user is a member of this team
+        is_user_member = team.members.filter(user=request.user, is_active=True).exists()
+        
+        team_data = {
+            'id': team.id,
+            'name': team.name,
+            'member_count': member_count,
+            'is_user_member': is_user_member,
+            'current_oncall': {
+                'user_id': current_slot.assigned_member.id,
+                'name': current_slot.assigned_member.name,
+                'email': current_slot.assigned_member.email,
+                'start_time': current_slot.start_time.isoformat(),
+                'end_time': current_slot.end_time.isoformat()
+            } if current_slot else None,
+            'upcoming_slots': [
+                {
+                    'user_id': slot.assigned_member.id,
+                    'name': slot.assigned_member.name,
+                    'email': slot.assigned_member.email,
+                    'start_time': slot.start_time.isoformat(),
+                    'end_time': slot.end_time.isoformat(),
+                    'date': slot.date.isoformat()
+                }
+                for slot in upcoming_slots
+            ],
+            'team_schedule_constraints': {
+                'max_hours_per_day': team.max_hours_per_day,
+                'max_hours_per_week': team.max_hours_per_week,
+                'min_rest_hours': team.min_rest_hours
+            }
+        }
+        
+        teams_data.append(team_data)
+    
+    return Response({
+        'teams': teams_data,
+        'current_time': current_time.isoformat(),
+        'user_id': request.user.id,
+        'pagination': {
+            'current_page': teams_page.number,
+            'total_pages': paginator.num_pages,
+            'total_count': paginator.count,
+            'page_size': page_size,
+            'has_next': teams_page.has_next(),
+            'has_previous': teams_page.has_previous(),
+        }
+    }, status=status.HTTP_200_OK)

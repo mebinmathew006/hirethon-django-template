@@ -147,3 +147,15 @@ export const getDashboardStatsRoute = async () => {
     const response = await axiosInstance.get(`/api/managers/dashboard-stats/`);
     return response;
 }
+
+// User Teams On-Call View
+export const getUserTeamsOncallRoute = async () => {
+    const response = await axiosInstance.get(`/api/members/teams-oncall/`);
+    return response;
+}
+
+// All Teams On-Call View
+export const getAllTeamsOncallRoute = async (page = 1, pageSize = 10) => {
+    const response = await axiosInstance.get(`/api/members/all-teams-oncall/?page=${page}&page_size=${pageSize}`);
+    return response;
+}

@@ -34,6 +34,9 @@ class UserDashboardSerializer(serializers.ModelSerializer):
     """
     teams = serializers.SerializerMethodField()
     total_availability_hours = serializers.SerializerMethodField()
+    max_hours_per_day = serializers.SerializerMethodField()
+    max_hours_per_week = serializers.SerializerMethodField()
+    min_rest_hours = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -47,6 +50,9 @@ class UserDashboardSerializer(serializers.ModelSerializer):
             'last_login',
             'teams',
             'total_availability_hours',
+            'max_hours_per_day',
+            'max_hours_per_week',
+            'min_rest_hours',
         ]
         read_only_fields = fields
     
@@ -76,3 +82,24 @@ class UserDashboardSerializer(serializers.ModelSerializer):
         
         # Convert to hours (assuming 24 hours per available day)
         return max(0, available_days * 24)
+    
+    def get_max_hours_per_day(self, obj):
+        """Get max hours per day from user's primary team"""
+        team_membership = obj.team_memberships.filter(is_active=True).first()
+        if team_membership:
+            return team_membership.team.max_hours_per_day
+        return 8  # Default value
+    
+    def get_max_hours_per_week(self, obj):
+        """Get max hours per week from user's primary team"""
+        team_membership = obj.team_memberships.filter(is_active=True).first()
+        if team_membership:
+            return team_membership.team.max_hours_per_week
+        return 40  # Default value
+    
+    def get_min_rest_hours(self, obj):
+        """Get min rest hours from user's primary team"""
+        team_membership = obj.team_memberships.filter(is_active=True).first()
+        if team_membership:
+            return team_membership.team.min_rest_hours
+        return 8  # Default value

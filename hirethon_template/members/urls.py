@@ -6,7 +6,9 @@ from hirethon_template.members.views import (
     request_leave_view,
     request_swap_view,
     get_swap_requests_view,
-    respond_to_swap_request_view
+    respond_to_swap_request_view,
+    get_user_teams_oncall_view,
+    get_all_teams_oncall_view
 )
 
 app_name = "members"
@@ -18,4 +20,6 @@ urlpatterns = [
     path("request-swap/", request_swap_view, name="request-swap"),
     path("swap-requests/", get_swap_requests_view, name="swap-requests"),
     path("swap-requests/<int:swap_request_id>/respond/", respond_to_swap_request_view, name="respond-swap-request"),
+    path("teams-oncall/", get_user_teams_oncall_view, name="user-teams-oncall"),
+    path("all-teams-oncall/", get_all_teams_oncall_view, name="all-teams-oncall"),
 ]

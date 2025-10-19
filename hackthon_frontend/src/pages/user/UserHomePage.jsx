@@ -112,7 +112,7 @@ export default function UserHomePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-300 text-sm">My Teams</p>
-                      <p className="text-3xl font-bold text-white">{userData.teams.length}</p>
+                      <p className="text-3xl font-bold text-white">{userData.teams?.length || 0}</p>
                     </div>
                     <div className="p-3 bg-gradient-to-br from-grey-500 to-blue-500 rounded-xl">
                       <Users className="w-6 h-6 text-white" />
@@ -124,7 +124,7 @@ export default function UserHomePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-300 text-sm">Available Hours</p>
-                      <p className="text-3xl font-bold text-white">{userData.total_availability_hours}h</p>
+                      <p className="text-3xl font-bold text-white">{userData.total_availability_hours || 0}h</p>
                     </div>
                     <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl">
                       <Clock className="w-6 h-6 text-white" />
@@ -136,7 +136,7 @@ export default function UserHomePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-300 text-sm">Max Hours/Day</p>
-                      <p className="text-3xl font-bold text-white">{userData.max_hours_per_day}h</p>
+                      <p className="text-3xl font-bold text-white">{userData.max_hours_per_day || 8}h</p>
                     </div>
                     <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl">
                       <TrendingUp className="w-6 h-6 text-white" />
@@ -184,15 +184,15 @@ export default function UserHomePage() {
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-300">Max Hours per Day</span>
-                          <span className="text-white font-semibold">{userData.max_hours_per_day}h</span>
+                          <span className="text-white font-semibold">{userData.max_hours_per_day || 8}h</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-300">Max Hours per Week</span>
-                          <span className="text-white font-semibold">{userData.max_hours_per_week}h</span>
+                          <span className="text-white font-semibold">{userData.max_hours_per_week || 40}h</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-300">Min Rest Hours</span>
-                          <span className="text-white font-semibold">{userData.min_rest_hours}h</span>
+                          <span className="text-white font-semibold">{userData.min_rest_hours || 8}h</span>
                         </div>
                       </div>
                     </div>
