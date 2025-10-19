@@ -7,7 +7,8 @@ from hirethon_template.managers.views import (
     get_empty_slots_notifications_view, mark_notification_read_view,
     get_leave_requests_view, approve_reject_leave_request_view,
     get_available_users_for_slot_view, assign_user_to_slot_view,
-    get_team_members_with_schedule_view, get_dashboard_stats_view
+    get_team_members_with_schedule_view, get_dashboard_stats_view,
+    get_admin_swap_requests_view, admin_reject_swap_request_view
 )
 from hirethon_template.managers.slot_views import (
     create_slots_manually_view, revalidate_slots_view
@@ -36,4 +37,6 @@ urlpatterns = [
     path("slots/<int:slot_id>/assign-user/", assign_user_to_slot_view, name="assign-user-to-slot"),
     path("teams/<int:team_id>/members-schedule/", get_team_members_with_schedule_view, name="get-team-members-with-schedule"),
     path("dashboard-stats/", get_dashboard_stats_view, name="get-dashboard-stats"),
+    path("swap-requests/", get_admin_swap_requests_view, name="get-admin-swap-requests"),
+    path("swap-requests/<int:swap_request_id>/reject/", admin_reject_swap_request_view, name="admin-reject-swap-request"),
 ]

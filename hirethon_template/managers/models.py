@@ -90,16 +90,28 @@ class Slot(models.Model):
         return self.start_time <= now <= self.end_time
 
 class SwapRequest(models.Model):
-    slot = models.ForeignKey(Slot, on_delete=models.CASCADE, related_name='swap_requests')
-    from_member = models.ForeignKey(User, on_delete=models.CASCADE, related_name='swap_requests_sent')
-    to_member = models.ForeignKey(User, on_delete=models.CASCADE, related_name='swap_requests_received')
+    from_slot = models.ForeignKey(Slot, on_delete=models.CASCADE, related_name='swap_requests_from', help_text="The slot the user wants to swap FROM")
+    to_slot = models.ForeignKey(Slot, on_delete=models.CASCADE, related_name='swap_requests_to', help_text="The slot the user wants to swap TO")
     accepted = models.BooleanField(default=False)
     rejected = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     responded_at = models.DateTimeField(null=True, blank=True)
     
+    class Meta:
+        unique_together = ('from_slot', 'to_slot', 'created_at')
+    
     def is_pending(self):
         return not (self.accepted or self.rejected)
+    
+    @property
+    def from_member(self):
+        """Get the member who wants to swap (from_slot's assigned member)"""
+        return self.from_slot.assigned_member if self.from_slot else None
+    
+    @property
+    def to_member(self):
+        """Get the member who would receive the swap (to_slot's assigned member)"""
+        return self.to_slot.assigned_member if self.to_slot else None
 
         
 class Alert(models.Model):

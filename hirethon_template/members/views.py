@@ -142,7 +142,9 @@ def get_day_slots_view(request, year, month, day):
         return Response({
             'date': target_date.isoformat(),
             'slots': [],
-            'team_members': []
+            'available_slots_for_swap': [],
+            'user_available': True,
+            'availability_reason': ''
         }, status=status.HTTP_200_OK)
     
     # Get slots for the specific date
@@ -150,13 +152,6 @@ def get_day_slots_view(request, year, month, day):
         team__in=user_teams,
         start_time__date=target_date
     ).select_related('team', 'assigned_member').order_by('start_time')
-    
-    # Get all team members for swap requests
-    team_members = User.objects.filter(
-        team_memberships__team__in=user_teams,
-        team_memberships__is_active=True,
-        is_active=True
-    ).exclude(id=request.user.id).distinct().values('id', 'name', 'email')
     
     # Get user's availability for this date
     try:
@@ -166,6 +161,69 @@ def get_day_slots_view(request, year, month, day):
     except Availability.DoesNotExist:
         user_available = True  # Default to available
         availability_reason = ''
+    
+    # Get available slots for swap
+    # Check if we need to filter by specific team (for swap requests)
+    swap_team_id = request.GET.get('for_team_id')
+    current_time_filter = request.GET.get('after_current_time', 'false').lower() == 'true'
+    
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Swap request - Team ID: {swap_team_id}, Time filter: {current_time_filter}, Target date: {target_date}")
+    
+    # Filter available slots for swap from the existing slots
+    available_slots_for_swap = []
+    from django.utils import timezone
+    
+    for slot in slots:
+        # Skip unassigned slots
+        if not slot.assigned_member:
+            continue
+            
+        # Skip user's own slots
+        if slot.assigned_member == request.user:
+            continue
+            
+        # If requesting for a specific team, only include slots from that team
+        if swap_team_id and str(slot.team.id) != swap_team_id:
+            continue
+            
+        # If we need to filter by current time, only show future slots
+        if current_time_filter:
+            now = timezone.now()
+            # For swap requests, only apply time filter if the target date is today
+            if target_date.date() == now.date():
+                # Same day - only show slots after current time
+                if slot.start_time <= now:
+                    continue
+            # Future date - show all slots (no time filter)
+        
+        # Add this slot to available slots for swap
+        available_slots_for_swap.append(slot)
+    
+    logger.info(f"Found {len(available_slots_for_swap)} available slots for swap")
+    
+    # Build the available slots for swap data
+    available_slots_data = []
+    for slot in available_slots_for_swap:
+        slot_data = {
+            'id': slot.id,
+            'team_id': slot.team.id,
+            'team_name': slot.team.name,
+            'start_time': slot.start_time.isoformat(),
+            'end_time': slot.end_time.isoformat(),
+            'assigned_member': {
+                'id': slot.assigned_member.id,
+                'name': slot.assigned_member.name,
+                'email': slot.assigned_member.email
+            },
+            'is_covered': slot.is_covered,
+            'is_holiday': slot.is_holiday
+        }
+        available_slots_data.append(slot_data)
+    
+    logger.info(f"Built {len(available_slots_data)} slots for available_slots_for_swap")
     
     day_data = {
         'date': target_date.isoformat(),
@@ -189,8 +247,10 @@ def get_day_slots_view(request, year, month, day):
             }
             for slot in slots
         ],
-        'team_members': list(team_members)
+        'available_slots_for_swap': available_slots_data
     }
+    
+    logger.info(f"Response includes available_slots_for_swap: {'available_slots_for_swap' in day_data}")
     
     return Response(day_data, status=status.HTTP_200_OK)
 
@@ -295,70 +355,104 @@ def request_swap_view(request):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    slot_id = request.data.get('slot_id')
-    to_member_id = request.data.get('to_member_id')
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Swap request received - Raw request.data: {request.data}")
     
-    if not slot_id or not to_member_id:
+    from_slot_id = request.data.get('from_slot_id')
+    to_slot_id = request.data.get('to_slot_id')
+    
+    logger.info(f"Extracted from_slot_id: {from_slot_id}, to_slot_id: {to_slot_id}")
+    
+    if not from_slot_id or not to_slot_id:
+        logger.warning(f"Missing required parameters - from_slot_id: {from_slot_id}, to_slot_id: {to_slot_id}")
         return Response(
-            {'error': {'commonError': 'Slot ID and target member ID are required.'}},
+            {'error': {'commonError': 'From slot ID and to slot ID are required.'}},
             status=status.HTTP_400_BAD_REQUEST
         )
     
     try:
-        slot = Slot.objects.get(id=slot_id, assigned_member=request.user)
+        from_slot = Slot.objects.get(id=from_slot_id, assigned_member=request.user)
     except Slot.DoesNotExist:
         return Response(
-            {'error': {'commonError': 'Slot not found or not assigned to you.'}},
+            {'error': {'commonError': 'From slot not found or not assigned to you.'}},
             status=status.HTTP_404_NOT_FOUND
         )
     
     try:
-        to_member = User.objects.get(id=to_member_id)
-    except User.DoesNotExist:
+        to_slot = Slot.objects.get(id=to_slot_id)
+    except Slot.DoesNotExist:
         return Response(
-            {'error': {'commonError': 'Target member not found.'}},
+            {'error': {'commonError': 'To slot not found.'}},
             status=status.HTTP_404_NOT_FOUND
         )
     
-    # Check if target member is in the same team
-    if not TeamMember.objects.filter(
-        team=slot.team,
-        user=to_member,
-        is_active=True
-    ).exists():
+    # Check if both slots are from the same team
+    if from_slot.team != to_slot.team:
         return Response(
-            {'error': {'commonError': 'Target member is not in the same team.'}},
+            {'error': {'commonError': 'Both slots must be from the same team.'}},
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Check if there's already a pending swap request for this slot
+    # Check if to_slot is assigned to someone else
+    if not to_slot.assigned_member:
+        return Response(
+            {'error': {'commonError': 'Cannot swap with an unassigned slot.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if to_slot.assigned_member == request.user:
+        return Response(
+            {'error': {'commonError': 'Cannot swap with your own slot.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if both slots are on the same date
+    if from_slot.date != to_slot.date:
+        return Response(
+            {'error': {'commonError': 'Both slots must be on the same date.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if there's already a pending swap request for this combination
     if SwapRequest.objects.filter(
-        slot=slot,
-        from_member=request.user,
+        from_slot=from_slot,
+        to_slot=to_slot,
         accepted=False,
         rejected=False
     ).exists():
         return Response(
-            {'error': {'commonError': 'You already have a pending swap request for this slot.'}},
+            {'error': {'commonError': 'You already have a pending swap request for these slots.'}},
             status=status.HTTP_400_BAD_REQUEST
         )
     
     # Create swap request
     swap_request = SwapRequest.objects.create(
-        slot=slot,
-        from_member=request.user,
-        to_member=to_member
+        from_slot=from_slot,
+        to_slot=to_slot
     )
     
     return Response({
         'message': 'Swap request sent successfully.',
         'swap_request': {
             'id': swap_request.id,
-            'slot_id': swap_request.slot.id,
-            'to_member': {
-                'id': swap_request.to_member.id,
-                'name': swap_request.to_member.name,
-                'email': swap_request.to_member.email
+            'from_slot': {
+                'id': swap_request.from_slot.id,
+                'start_time': swap_request.from_slot.start_time.isoformat(),
+                'end_time': swap_request.from_slot.end_time.isoformat(),
+                'team_name': swap_request.from_slot.team.name
+            },
+            'to_slot': {
+                'id': swap_request.to_slot.id,
+                'start_time': swap_request.to_slot.start_time.isoformat(),
+                'end_time': swap_request.to_slot.end_time.isoformat(),
+                'team_name': swap_request.to_slot.team.name,
+                'assigned_member': {
+                    'id': swap_request.to_slot.assigned_member.id,
+                    'name': swap_request.to_slot.assigned_member.name,
+                    'email': swap_request.to_slot.assigned_member.email
+                }
             },
             'created_at': swap_request.created_at.isoformat()
         }
@@ -377,23 +471,23 @@ def get_swap_requests_view(request):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    # Get swap requests where current user is the target member
+    # Get swap requests where current user is assigned to the to_slot
     swap_requests = SwapRequest.objects.filter(
-        to_member=request.user,
+        to_slot__assigned_member=request.user,
         accepted=False,
         rejected=False
-    ).select_related('slot', 'slot__team', 'from_member').order_by('-created_at')
+    ).select_related('from_slot', 'from_slot__team', 'from_slot__assigned_member', 'to_slot', 'to_slot__team', 'to_slot__assigned_member').order_by('-created_at')
     
     swap_requests_data = []
     for swap_request in swap_requests:
         swap_requests_data.append({
             'id': swap_request.id,
-            'slot': {
-                'id': swap_request.slot.id,
-                'team_name': swap_request.slot.team.name,
-                'start_time': swap_request.slot.start_time.isoformat(),
-                'end_time': swap_request.slot.end_time.isoformat(),
-                'date': swap_request.slot.date.isoformat(),
+            'slot': {  # This is the slot the user wants to swap WITH (from_slot)
+                'id': swap_request.from_slot.id,
+                'team_name': swap_request.from_slot.team.name,
+                'start_time': swap_request.from_slot.start_time.isoformat(),
+                'end_time': swap_request.from_slot.end_time.isoformat(),
+                'date': swap_request.from_slot.date.isoformat(),
             },
             'from_member': {
                 'id': swap_request.from_member.id,
@@ -431,7 +525,7 @@ def respond_to_swap_request_view(request, swap_request_id):
     try:
         swap_request = SwapRequest.objects.get(
             id=swap_request_id,
-            to_member=request.user,
+            to_slot__assigned_member=request.user,
             accepted=False,
             rejected=False
         )
@@ -445,8 +539,8 @@ def respond_to_swap_request_view(request, swap_request_id):
         from django.utils import timezone
         
         if action == 'approve':
-            # Check if the requesting user is still available for this slot
-            slot_date = swap_request.slot.date
+            # Check if the requesting user is still available for the to_slot date
+            slot_date = swap_request.to_slot.date
             try:
                 requester_availability = Availability.objects.get(
                     user=swap_request.from_member,
@@ -461,23 +555,24 @@ def respond_to_swap_request_view(request, swap_request_id):
                 # If no availability record, assume they're available
                 pass
             
-            # Approve the swap
+            # Approve the swap - perform the actual slot exchange
             swap_request.accepted = True
             swap_request.responded_at = timezone.now()
             swap_request.save()
             
-            # Update the slot assignment
-            swap_request.slot.assigned_member = request.user
-            swap_request.slot.save()
+            # Perform the swap: exchange assigned members between the slots
+            from_slot_original_member = swap_request.from_slot.assigned_member
+            to_slot_original_member = swap_request.to_slot.assigned_member
             
-            # Trigger revalidation after swap to ensure constraints are still met
-            try:
-                from hirethon_template.managers.tasks import revalidate_slot_assignments_task
-                revalidate_slot_assignments_task.delay(team_id=swap_request.slot.team.id, days_back=7)
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Could not trigger slot revalidation after swap: {e}")
+            # Update the slot assignments
+            swap_request.from_slot.assigned_member = to_slot_original_member
+            swap_request.to_slot.assigned_member = from_slot_original_member
+            
+            swap_request.from_slot.save()
+            swap_request.to_slot.save()
+            
+            # Note: We don't trigger revalidation after manual swaps as the user's choice should be respected
+            # The swap itself should maintain the existing slot structure, just changing assigned members
             
             return Response({
                 'message': 'Swap request approved successfully.',

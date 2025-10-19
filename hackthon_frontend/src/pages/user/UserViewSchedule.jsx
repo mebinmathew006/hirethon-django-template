@@ -17,6 +17,7 @@ export default function UserViewSchedule() {
     const [leaveModalOpen, setLeaveModalOpen] = useState(false);
     const [swapModalOpen, setSwapModalOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState(null);
+    const [swapSlotsData, setSwapSlotsData] = useState(null);
     const [leaveReason, setLeaveReason] = useState("");
     const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
@@ -52,6 +53,8 @@ export default function UserViewSchedule() {
             setDaySlotsLoading(true);
             const response = await getDaySlotsRoute(date.getFullYear(), date.getMonth() + 1, date.getDate());
             if (response.data) {
+                console.log("Day slots data:", response.data);
+                console.log("Available slots for swap:", response.data.available_slots_for_swap);
                 setDaySlotsData(response.data);
             }
         } catch (error) {
@@ -61,6 +64,7 @@ export default function UserViewSchedule() {
             setDaySlotsLoading(false);
         }
     };
+
 
     useEffect(() => {
         fetchUserData();
@@ -95,27 +99,90 @@ export default function UserViewSchedule() {
         }
     };
 
-    const handleRequestSwap = async (toMemberId) => {
-        if (!selectedSlot) return;
+    const handleRequestSwap = async (toSlotId) => {
+        if (!selectedSlot) {
+            toast.error("No slot selected for swap");
+            return;
+        }
+
+        if (!toSlotId) {
+            toast.error("No target slot selected");
+            return;
+        }
+
+        if (!selectedSlot.id) {
+            console.error("Selected slot has no ID:", selectedSlot);
+            toast.error("Invalid selected slot");
+            return;
+        }
 
         try {
-            const response = await requestSwapRoute(selectedSlot.id, toMemberId);
+            console.log("Sending swap request:", {
+                fromSlotId: selectedSlot.id,
+                toSlotId: toSlotId,
+                selectedSlot: selectedSlot
+            });
+            
+            const response = await requestSwapRoute(selectedSlot.id, toSlotId);
             
             if (response.data) {
                 toast.success("Swap request sent successfully");
                 setSwapModalOpen(false);
                 setSelectedSlot(null);
+                setSwapSlotsData(null);
                 await fetchDaySlots(selectedDate); // Refresh day slots
             }
         } catch (error) {
             console.error("Error requesting swap:", error);
-            toast.error("Failed to send swap request");
+            console.error("Error response:", error.response?.data);
+            console.error("Request data was:", {
+                fromSlotId: selectedSlot.id,
+                toSlotId: toSlotId
+            });
+            const errorMessage = error.response?.data?.error?.commonError || "Failed to send swap request";
+            toast.error(errorMessage);
         }
     };
 
     const openSwapModal = (slot) => {
+        console.log("Opening swap modal for slot:", slot);
+        console.log("Current daySlotsData:", daySlotsData);
         setSelectedSlot(slot);
         setSwapModalOpen(true);
+        
+        // Filter available slots from existing daySlotsData instead of making API call
+        if (daySlotsData && daySlotsData.slots) {
+            const now = new Date();
+            const currentDate = new Date();
+            
+            const availableSlots = daySlotsData.slots.filter(daySlot => {
+                // Skip unassigned slots
+                if (!daySlot.assigned_member) return false;
+                
+                // Skip user's own slots
+                if (daySlot.is_mine) return false;
+                
+                // Only include slots from the same team
+                if (daySlot.team_id !== slot.team_id) return false;
+                
+                // For time filtering - if it's today, only show future slots
+                const slotStartTime = new Date(daySlot.start_time);
+                const isToday = selectedDate && 
+                    selectedDate.toDateString() === currentDate.toDateString();
+                
+                if (isToday && slotStartTime <= now) return false;
+                
+                return true;
+            });
+            
+            console.log("Filtered available slots:", availableSlots);
+            
+            // Set the filtered slots as available_slots_for_swap
+            setSwapSlotsData({
+                ...daySlotsData,
+                available_slots_for_swap: availableSlots
+            });
+        }
     };
 
     const openLeaveModal = () => {
@@ -481,33 +548,78 @@ export default function UserViewSchedule() {
             )}
 
             {/* Swap Request Modal */}
-            {swapModalOpen && selectedSlot && daySlotsData?.team_members && (
+            {swapModalOpen && selectedSlot && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full">
+                    <div className="bg-white rounded-2xl max-w-lg w-full">
                         <div className="p-6 border-b border-gray-200">
                             <h3 className="text-xl font-bold text-gray-900">Request Swap</h3>
                             <p className="text-gray-600 mt-1">
-                                Select a team member to swap with for this slot.
+                                Select a slot to swap with your current slot.
                             </p>
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                                <p className="text-sm text-blue-800">
+                                    <strong>Your slot:</strong> {selectedSlot.team_name} - {new Date(selectedSlot.start_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(selectedSlot.end_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                </p>
+                            </div>
                         </div>
                         
                         <div className="p-6 max-h-80 overflow-y-auto">
-                            <div className="space-y-2">
-                                {daySlotsData.team_members.map(member => (
-                                    <button
-                                        key={member.id}
-                                        onClick={() => handleRequestSwap(member.id)}
-                                        className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all"
-                                    >
-                                        <div className="font-medium text-gray-900">{member.name}</div>
-                                        <div className="text-sm text-gray-600">{member.email}</div>
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            {daySlotsData.team_members.length === 0 && (
-                                <div className="text-center py-4 text-gray-500">
-                                    No other team members available for swap.
+                            {swapSlotsData && swapSlotsData.available_slots_for_swap && Array.isArray(swapSlotsData.available_slots_for_swap) && swapSlotsData.available_slots_for_swap.length > 0 ? (
+                                <div className="space-y-3">
+                                    {swapSlotsData.available_slots_for_swap.map(slot => (
+                                        <button
+                                            key={slot.id}
+                                            onClick={() => handleRequestSwap(slot.id)}
+                                            className="w-full text-left p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all"
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-gray-900">{slot.team_name}</div>
+                                                    <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                                                        <Clock className="w-4 h-4" />
+                                                        {new Date(slot.start_time).toLocaleTimeString('en-US', {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        })} - {new Date(slot.end_time).toLocaleTimeString('en-US', {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        })}
+                                                    </div>
+                                                    {slot.assigned_member && (
+                                                        <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                                                            <User className="w-4 h-4" />
+                                                            {slot.assigned_member.name}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <div className="mb-4">
+                                        <Clock className="w-12 h-12 text-gray-400 mx-auto" />
+                                    </div>
+                                    <p className="text-lg font-medium mb-2">No slots available for swap</p>
+                                    <p className="text-sm">
+                                        There are no other assigned slots from your team after the current time that you can swap with.
+                                    </p>
+                                    {process.env.NODE_ENV === 'development' && (
+                                        <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-left max-h-48 overflow-y-auto">
+                                            <p><strong>Debug Info:</strong></p>
+                                            <p><strong>swapSlotsData exists:</strong> {swapSlotsData ? 'Yes' : 'No'}</p>
+                                            <p><strong>available_slots_for_swap exists:</strong> {swapSlotsData?.available_slots_for_swap ? 'Yes' : 'No'}</p>
+                                            <p><strong>available_slots_for_swap is array:</strong> {Array.isArray(swapSlotsData?.available_slots_for_swap) ? 'Yes' : 'No'}</p>
+                                            <p><strong>available_slots_for_swap length:</strong> {swapSlotsData?.available_slots_for_swap?.length || 0}</p>
+                                            <p><strong>Full swapSlotsData:</strong></p>
+                                            <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(swapSlotsData, null, 2)}</pre>
+                                            <p><strong>Selected Slot:</strong></p>
+                                            <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(selectedSlot, null, 2)}</pre>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -517,6 +629,7 @@ export default function UserViewSchedule() {
                                 onClick={() => {
                                     setSwapModalOpen(false);
                                     setSelectedSlot(null);
+                                    setSwapSlotsData(null);
                                 }}
                                 className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
                             >

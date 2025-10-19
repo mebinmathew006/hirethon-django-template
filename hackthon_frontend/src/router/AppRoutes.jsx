@@ -10,6 +10,7 @@ import AdminViewTeamMembers from "../pages/admin/AdminViewTeamMembers";
 import AdminManageUser from "../pages/admin/AdminManageUser";
 import AdminNotifications from "../pages/admin/AdminNotifications";
 import AdminViewLeave from "../pages/admin/AdminViewLeave";
+import AdminSwapRequests from "../pages/admin/AdminSwapRequests";
 import UserHomePage from "../pages/user/UserHomePage";
 import UserViewSchedule from "../pages/user/UserViewSchedule";
 import UserViewTeams from "../pages/user/UserViewTeams";
@@ -31,6 +32,7 @@ const AppRoutes = () => {
       <Route path="/add-team-member/:teamId" element={<AdminAddTeamMember/>} />
       <Route path="/admin-notifications" element={<AdminNotifications/>} />
       <Route path="/admin/leave-requests" element={<AdminViewLeave/>} />
+      <Route path="/admin/swap-requests" element={<AdminSwapRequests/>} />
       <Route path="/user/home" element={<UserHomePage/>} />
       <Route path="/user/schedule" element={<UserViewSchedule/>} />
       <Route path="/user/teams" element={<UserViewTeams/>} />

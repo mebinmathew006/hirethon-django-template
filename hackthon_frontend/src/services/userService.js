@@ -77,8 +77,22 @@ export const getUserScheduleRoute = async () => {
     return response;
 }
 
-export const getDaySlotsRoute = async (year, month, day) => {
-    const response = await axiosInstance.get(`/api/members/day-slots/${year}/${month}/${day}/`);
+export const getDaySlotsRoute = async (year, month, day, forTeamId = null, afterCurrentTime = false) => {
+    let url = `/api/members/day-slots/${year}/${month}/${day}/`;
+    const params = new URLSearchParams();
+    
+    if (forTeamId) {
+        params.append('for_team_id', forTeamId);
+    }
+    if (afterCurrentTime) {
+        params.append('after_current_time', 'true');
+    }
+    
+    if (params.toString()) {
+        url += `?${params.toString()}`;
+    }
+    
+    const response = await axiosInstance.get(url);
     return response;
 }
 
@@ -90,11 +104,14 @@ export const requestLeaveRoute = async (date, reason = 'Leave requested') => {
     return response;
 }
 
-export const requestSwapRoute = async (slotId, toMemberId) => {
-    const response = await axiosInstance.post('/api/members/request-swap/', {
-        slot_id: slotId,
-        to_member_id: toMemberId
-    });
+export const requestSwapRoute = async (fromSlotId, toSlotId) => {
+    const requestData = {
+        from_slot_id: fromSlotId,
+        to_slot_id: toSlotId
+    };
+    console.log("requestSwapRoute - sending data:", requestData);
+    
+    const response = await axiosInstance.post('/api/members/request-swap/', requestData);
     return response;
 }
 
@@ -157,5 +174,16 @@ export const getUserTeamsOncallRoute = async () => {
 // All Teams On-Call View
 export const getAllTeamsOncallRoute = async (page = 1, pageSize = 10) => {
     const response = await axiosInstance.get(`/api/members/all-teams-oncall/?page=${page}&page_size=${pageSize}`);
+    return response;
+}
+
+// Admin Swap Requests Management
+export const getAdminSwapRequestsRoute = async (page = 1, pageSize = 10) => {
+    const response = await axiosInstance.get(`/api/managers/swap-requests/?page=${page}&page_size=${pageSize}`);
+    return response;
+}
+
+export const adminRejectSwapRequestRoute = async (swapRequestId) => {
+    const response = await axiosInstance.post(`/api/managers/swap-requests/${swapRequestId}/reject/`);
     return response;
 }

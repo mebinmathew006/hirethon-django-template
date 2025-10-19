@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 
-from .models import Team, TeamMember, LeaveRequest, Slot
+from .models import Team, TeamMember, LeaveRequest, Slot, SwapRequest
 from .serializers import (
     CreateUserSerializer, UserResponseSerializer, 
     CreateTeamSerializer, TeamResponseSerializer,
@@ -1753,3 +1753,114 @@ def format_time_ago(dt):
         return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
     else:
         return "Just now"
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_admin_swap_requests_view(request):
+    """
+    API view to get all swap requests for admin to review
+    """
+    # Check if user is manager and active
+    if not request.user.is_manager or not request.user.is_active:
+        return Response(
+            {'error': {'commonError': 'Access denied. Manager permissions required.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    page = int(request.GET.get('page', 1))
+    page_size = min(int(request.GET.get('page_size', 10)), 50)  # Limit to max 50 per page
+    
+    # Get all pending swap requests across all teams
+    swap_requests = SwapRequest.objects.filter(
+        accepted=False,
+        rejected=False
+    ).select_related(
+        'from_slot', 'from_slot__team', 'from_slot__assigned_member',
+        'to_slot', 'to_slot__team', 'to_slot__assigned_member'
+    ).order_by('-created_at')
+    
+    # Apply pagination
+    paginator = Paginator(swap_requests, page_size)
+    swap_requests_page = paginator.get_page(page)
+    
+    swap_requests_data = []
+    for swap_request in swap_requests_page:
+        swap_requests_data.append({
+            'id': swap_request.id,
+            'from_member': {
+                'id': swap_request.from_member.id,
+                'name': swap_request.from_member.name,
+                'email': swap_request.from_member.email
+            },
+            'to_member': {
+                'id': swap_request.to_member.id,
+                'name': swap_request.to_member.name,
+                'email': swap_request.to_member.email
+            },
+            'from_slot': {
+                'id': swap_request.from_slot.id,
+                'team_name': swap_request.from_slot.team.name,
+                'start_time': swap_request.from_slot.start_time.isoformat(),
+                'end_time': swap_request.from_slot.end_time.isoformat(),
+                'date': swap_request.from_slot.date.isoformat(),
+            },
+            'to_slot': {
+                'id': swap_request.to_slot.id,
+                'team_name': swap_request.to_slot.team.name,
+                'start_time': swap_request.to_slot.start_time.isoformat(),
+                'end_time': swap_request.to_slot.end_time.isoformat(),
+                'date': swap_request.to_slot.date.isoformat(),
+            },
+            'created_at': swap_request.created_at.isoformat()
+        })
+    
+    return Response({
+        'swap_requests': swap_requests_data,
+        'pagination': {
+            'current_page': swap_requests_page.number,
+            'total_pages': paginator.num_pages,
+            'total_count': paginator.count,
+            'page_size': page_size,
+            'has_next': swap_requests_page.has_next(),
+            'has_previous': swap_requests_page.has_previous(),
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def admin_reject_swap_request_view(request, swap_request_id):
+    """
+    API view for admin to reject a swap request
+    """
+    # Check if user is manager and active
+    if not request.user.is_manager or not request.user.is_active:
+        return Response(
+            {'error': {'commonError': 'Access denied. Manager permissions required.'}},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        swap_request = SwapRequest.objects.get(id=swap_request_id)
+    except SwapRequest.DoesNotExist:
+        return Response(
+            {'error': {'commonError': 'Swap request not found.'}},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Check if already processed
+    if swap_request.accepted or swap_request.rejected:
+        return Response(
+            {'error': {'commonError': 'This swap request has already been processed.'}},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Admin can only reject, not approve swap requests
+    swap_request.rejected = True
+    swap_request.save()
+    
+    return Response({
+        'message': 'Swap request has been rejected.',
+        'swap_request_id': swap_request.id
+    }, status=status.HTTP_200_OK)
